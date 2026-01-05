@@ -262,3 +262,130 @@ export function generateReading(name: string, dob: Date): NumerologyReading {
     luckyColor: getLuckyColor(lifePathNumber),
   };
 }
+
+export interface FreeNumerologyReport {
+  title: "Your Quick Numerology Snapshot";
+  dob: string;
+  lifePath: number;
+  whatThisMeans: string;
+  luckyColor: {
+    name: string;
+    hex: string;
+    line: string;
+  };
+  quickInsight: string;
+  cta: string;
+  disclaimer: string;
+  text: string;
+}
+
+function formatDobDDMMYYYY(dob: Date): string {
+  const dd = String(dob.getDate()).padStart(2, "0");
+  const mm = String(dob.getMonth() + 1).padStart(2, "0");
+  const yyyy = String(dob.getFullYear());
+  return `${dd}-${mm}-${yyyy}`;
+}
+
+function countWords(s: string): number {
+  return s
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+}
+
+export function generateFreeReportFromDob(dob: Date): FreeNumerologyReport {
+  const lifePath = calculateLifePathNumber(dob);
+  const color = getLuckyColor(lifePath);
+
+  const whatThisMeansMap: Record<number, string> = {
+    1: "You tend to be independent and action-oriented. You may do best when you lead with clear goals.",
+    2: "You tend to be supportive and intuitive. You may do best in calm teamwork and steady routines.",
+    3: "You tend to be expressive and creative. You may do best when you share ideas consistently.",
+    4: "You tend to be practical and disciplined. You may do best with structure and step-by-step progress.",
+    5: "You tend to be adaptable and curious. You may do best when you balance freedom with focus.",
+    6: "You tend to be caring and responsible. You may do best when you create harmony and healthy boundaries.",
+    7: "You tend to be thoughtful and analytical. You may do best with quiet time and learning.",
+    8: "You tend to be ambitious and results-driven. You may do best with long-term planning and consistency.",
+    9: "You tend to be compassionate and broad-minded. You may do best when you channel purpose into service.",
+    11: "You tend to be intuitive and inspiring. You may do best when you ground big ideas into simple steps.",
+    22: "You tend to be practical and visionary. You may do best when you build systems with patience.",
+    33: "You tend to be nurturing and uplifting. You may do best when you guide others gently and clearly.",
+  };
+
+  const whatThisMeans = whatThisMeansMap[lifePath] ?? whatThisMeansMap[9];
+
+  const luckyColorLine = "This color may help you feel more aligned in daily decisions.";
+
+  const quickInsightMap: Record<number, string> = {
+    1: "Quick Insight: Start with one small decision today and follow through.",
+    2: "Quick Insight: If unsure, pause and choose the calmer option.",
+    3: "Quick Insight: Share one idea clearly instead of keeping it in your head.",
+    4: "Quick Insight: Break one task into steps and finish the first step.",
+    5: "Quick Insight: Add variety, but keep one priority fixed for the day.",
+    6: "Quick Insight: Support others, but also protect your personal time.",
+    7: "Quick Insight: Write down one insight after reading or reflecting.",
+    8: "Quick Insight: Focus on one measurable goal and track it.",
+    9: "Quick Insight: Do one helpful act without overextending yourself.",
+    11: "Quick Insight: Trust your intuition, then confirm with a simple plan.",
+    22: "Quick Insight: Choose one system to improve and refine it steadily.",
+    33: "Quick Insight: Teach or guide through a small, kind action today.",
+  };
+
+  const quickInsight = (quickInsightMap[lifePath] ?? quickInsightMap[9]).replace(/^Quick Insight:\s*/i, "");
+
+  const cta = "Unlock your complete personalized numerology report for ₹49. Full name-based analysis included.";
+  const disclaimer = "Numerology offers guidance for self-understanding.";
+
+  const dobText = formatDobDDMMYYYY(dob);
+  const reportText = [
+    "Title: Your Quick Numerology Snapshot",
+    "",
+    `Date of Birth: ${dobText}`,
+    "",
+    `Your Life Path Number: ${lifePath}`,
+    "",
+    "What this means:",
+    whatThisMeans,
+    "",
+    "Lucky Color:",
+    `${color.name} — ${luckyColorLine}`,
+    "",
+    "Quick Insight:",
+    quickInsight,
+    "",
+    "CTA:",
+    cta,
+    "",
+    "DISCLAIMER:",
+    disclaimer,
+  ].join("\n");
+
+  const clippedWhatThisMeans = (() => {
+    if (countWords(reportText) <= 120) return whatThisMeans;
+    const parts = whatThisMeans.split(".").map((p) => p.trim()).filter(Boolean);
+    if (parts.length >= 1) {
+      const shorter = `${parts[0]}.`;
+      const shorterText = reportText.replace(whatThisMeans, shorter);
+      if (countWords(shorterText) <= 120) return shorter;
+    }
+    return "You tend to have a clear life direction. Small consistent steps may help you feel aligned.";
+  })();
+
+  const finalText = reportText.replace(whatThisMeans, clippedWhatThisMeans);
+
+  return {
+    title: "Your Quick Numerology Snapshot",
+    dob: dobText,
+    lifePath,
+    whatThisMeans: clippedWhatThisMeans,
+    luckyColor: {
+      name: color.name,
+      hex: color.hex,
+      line: luckyColorLine,
+    },
+    quickInsight,
+    cta,
+    disclaimer,
+    text: finalText,
+  };
+}

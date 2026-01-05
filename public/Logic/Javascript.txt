@@ -1,0 +1,108 @@
+// numerology.js - Pythagorean basic functions
+
+const PY_MAPPING = {
+  A:1,B:2,C:3,D:4,E:5,F:6,G:7,H:8,I:9,
+  J:1,K:2,L:3,M:4,N:5,O:6,P:7,Q:8,R:9,
+  S:1,T:2,U:3,V:4,W:5,X:6,Y:7,Z:8
+};
+
+function cleanName(name){
+  return (name||"").toUpperCase().replace(/[^A-Z]/g,"");
+}
+
+function letterToNumber(ch){
+  return PY_MAPPING[ch] || 0;
+}
+
+function sumDigits(n){
+  return String(n).split("").reduce((s,c)=>s+Number(c),0);
+}
+
+// reduce number, optionally preserve master numbers 11 & 22
+function reduceNumber(n, { preserveMaster=false } = {}){
+  let num = Number(n);
+  while(num > 9 && !(preserveMaster && (num === 11 || num === 22))){
+    num = sumDigits(num);
+  }
+  return num;
+}
+
+// parse date formats (DD-MM-YYYY or YYYY-MM-DD)
+function parseDOBtoDigits(dobStr){
+  // assume dd-mm-yyyy or yyyy-mm-dd
+  const parts = dobStr.includes("-") ? dobStr.split("-") : [dobStr];
+  if(parts.length === 3){
+    // detect if first part is year
+    if(parts[0].length === 4){
+      // yyyy-mm-dd -> reorder
+      return [...parts[0],...parts[1],...parts[2]].join("");
+    } else {
+      // dd-mm-yyyy
+      return parts.join("");
+    }
+  }
+  throw new Error("Invalid DOB format. Use DD-MM-YYYY or YYYY-MM-DD");
+}
+
+function lifePathFromDOB(dobStr, opts = {}){
+  const digitsStr = parseDOBtoDigits(dobStr);
+  const sum = digitsStr.split("").reduce((s,c)=>s+Number(c),0);
+  return reduceNumber(sum, opts);
+}
+
+function driverNumberFromDOB(dobStr, opts = {}){
+  const parts = dobStr.split("-");
+  // assume dd-mm-yyyy format; if user passed yyyy-mm-dd, detect
+  let day = parts[0].length === 4 ? parts[2] : parts[0];
+  return reduceNumber(Number(day), opts);
+}
+
+function nameNumber(fullName, opts = {}){
+  const s = cleanName(fullName);
+  let total = 0;
+  for(const ch of s) total += letterToNumber(ch);
+  return reduceNumber(total, opts);
+}
+
+function soulUrge(fullName, opts = {}){
+  const s = cleanName(fullName);
+  const vowels = new Set(["A","E","I","O","U"]);
+  let total = 0;
+  for(const ch of s) if(vowels.has(ch)) total += letterToNumber(ch);
+  return reduceNumber(total, opts);
+}
+
+function personalityNumber(fullName, opts = {}){
+  const s = cleanName(fullName);
+  const vowels = new Set(["A","E","I","O","U"]);
+  let total = 0;
+  for(const ch of s) if(!vowels.has(ch)) total += letterToNumber(ch);
+  return reduceNumber(total, opts);
+}
+
+// Generate the report object (basic)
+function generateReport({ fullName, dob, preserveMaster=false }){
+  const opts = { preserveMaster };
+  const lifePath = lifePathFromDOB(dob, opts);
+  const driver = driverNumberFromDOB(dob, opts);
+  const expr = nameNumber(fullName, opts);
+  const soul = soulUrge(fullName, opts);
+  const personality = personalityNumber(fullName, opts);
+  const luckyNumbers = [lifePath, expr, driver].filter(n=>n);
+  return {
+    lifePath, driver, nameNumber: expr, soulUrge: soul, personalityNumber: personality,
+    luckyNumbers: Array.from(new Set(luckyNumbers)),
+    // placeholders for textual sections to be filled by template generator
+    strengths: [], balanceAreas: [], friendlyNumbers: [], challengingNumbers: [], luckyColors: [], remedies: []
+  };
+}
+
+// Example usage
+if(require.main === module){
+  const demo = generateReport({ fullName: "Harsh A Bagde", dob: "03-08-1999" });
+  console.log(demo);
+}
+
+module.exports = {
+  generateReport, lifePathFromDOB, driverNumberFromDOB, nameNumber, soulUrge, personalityNumber, reduceNumber
+};

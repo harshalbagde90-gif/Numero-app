@@ -1,0 +1,56 @@
+Numerology Report — Quick Guide
+
+Name: {{fullName}}
+Date of Birth: {{dob}}
+
+Summary
+A concise snapshot: Your Life Path is {{lifePath}}. This indicates that you are likely to be {{one-line-summary}}. (2–3 short sentences)
+
+1) Life Path ({{lifePath}})
+What it means:
+- Short interpretative line(s) about overall direction and tendencies.
+
+How it may show up in daily life:
+- 1–2 short examples.
+
+Suggested action:
+- One simple habit: {{remedy}}.
+
+2) Driver / Day Number ({{driver}})
+What it means:
+- Short explanation: daily style / immediate reactions.
+
+Practical tip:
+- One short action.
+
+3) Name Number / Expression ({{nameNumber}})
+What it means:
+- How you present yourself, creative/communication style.
+
+4) Soul Urge ({{soulUrge}}) & Personality ({{personalityNumber}})
+- Short interpretive lines for inner drives and external persona.
+
+Strengths
+- Bullet 2–3 points.
+
+Balance Areas (gentle)
+- Bullet 1–2 points describing tendencies to watch for.
+
+Friendly & Challenging Numbers
+- Friendly: {{friendlyNumbers}}
+- Challenging (areas to balance): {{challengingNumbers}}
+
+Lucky factors
+- Lucky colors: {{luckyColors}}
+- Lucky numbers: {{luckyNumbers}}
+- Best day(s): {{bestDays}}
+
+Practical Remedies (3 actions)
+1) Habit: {{remedy1}}
+2) Quick behavioral tip: {{remedy2}}
+3) Environment tweak (color/day): {{remedy3}}
+
+Closing note
+Numerology offers useful guidance about tendencies and small steps you can use immediately. Use these suggestions as practical experiments — what works for one person may not for all. Numerology is a guidance tool, not a guarantee.
+
+(100% digital product: no refunds — refer to site policy)

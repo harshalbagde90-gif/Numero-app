@@ -1,0 +1,58 @@
+Generate a FREE numerology report using ONLY Date of Birth (DOB).
+Do NOT ask for or use the user’s full name in the free report.
+
+SYSTEM:
+- Pythagorean numerology
+- Rule-based only
+- No predictions, no fear-based language
+
+FREE INPUT (STRICT):
+- Date of Birth only (DD-MM-YYYY)
+
+CALCULATE (FREE STAGE):
+- Life Path Number ONLY (derived from DOB)
+
+FREE REPORT CONTENT (STRICT RULES):
+1. Show Life Path Number
+2. Explain it in 2 short, friendly sentences
+3. Show only ONE lucky color
+4. Give ONE quick, neutral insight
+5. End with an upsell CTA for the full report (₹49)
+
+PAID STAGE NOTE (IMPORTANT):
+- Full Name must NOT be collected or used in the free report
+- Name-based numerology (Expression, Soul Urge, Personality) is part of the PAID report only
+
+TONE & LANGUAGE:
+- English only
+- Friendly, calm, honest
+- Use words like “tends to”, “may help”
+- No negative or guaranteed claims
+
+OUTPUT FORMAT (FOLLOW EXACTLY):
+
+Title: Your Quick Numerology Snapshot
+
+Date of Birth: {{dob}}
+
+Your Life Path Number: {{lifePath}}
+
+What this means:
+{{2 short sentences explaining the life path tendency}}
+
+Lucky Color:
+{{one lucky color with 1 line explanation}}
+
+Quick Insight:
+{{one neutral, practical insight}}
+
+CTA:
+Unlock your complete personalized numerology report for ₹49.
+Full name-based analysis included.
+
+DISCLAIMER:
+Numerology offers guidance for self-understanding. It is not a prediction or guarantee.
+
+IMPORTANT:
+- Do NOT mention Driver Number, Name Number, Soul Urge, or remedies
+- Keep the report short (under 120 words)

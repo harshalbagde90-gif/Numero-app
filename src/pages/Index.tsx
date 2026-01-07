@@ -104,7 +104,31 @@ const Index = () => {
       return;
     }
 
-    handleFormSubmit(name, fullDob);
+    const newReading = generateReading(name, fullDob);
+    setReading(newReading);
+    setIsLoading(true);
+
+    initiatePayment(
+      PRICE,
+      name,
+      () => {
+        setIsUnlocked(true);
+        setIsLoading(false);
+        setState("preview");
+        toast({
+          title: "Payment Successful! 🎉",
+          description: "Your full report is now unlocked.",
+        });
+      },
+      (error) => {
+        setIsLoading(false);
+        toast({
+          title: "Payment Unsuccessful",
+          description: error,
+          variant: "destructive",
+        });
+      }
+    );
   };
 
   const handleUnlock = () => {
@@ -125,7 +149,7 @@ const Index = () => {
       (error) => {
         setIsLoading(false);
         toast({
-          title: "Payment Failed",
+          title: "Payment Unsuccessful",
           description: error,
           variant: "destructive",
         });
@@ -137,9 +161,9 @@ const Index = () => {
     return (
       <div className="bg-background text-foreground transition-colors duration-300 min-h-screen flex flex-col">
         <Dialog open={isSampleResultOpen} onOpenChange={setIsSampleResultOpen}>
-          <DialogContent className="w-[95vw] max-w-3xl p-0 border-none bg-transparent shadow-none sm:overflow-visible overflow-hidden">
+          <DialogContent className="w-[95vw] max-w-3xl p-0 border-none bg-transparent shadow-none sm:overflow-hidden overflow-hidden flex flex-col max-h-[90vh]">
             {/* Outer Static Framework - Border & Glow stay here */}
-            <div className="relative w-full rounded-[1.5rem] premium-border-gold shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-[#0a0518]/95 backdrop-blur-2xl flex flex-col max-h-[85vh] md:max-h-none overflow-hidden">
+            <div className="relative w-full rounded-[1.5rem] premium-border-gold shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-[#0a0518]/95 backdrop-blur-2xl flex flex-col h-full overflow-hidden">
               <div className="edge-glow z-20 pointer-events-none" />
 
               {/* Premium Cosmic Background Elements - Fixed position */}
@@ -149,7 +173,7 @@ const Index = () => {
               </div>
 
               {/* Scrollable Content Container */}
-              <div className="overflow-y-auto md:overflow-visible custom-scrollbar relative z-10 p-0 w-full">
+              <div className="overflow-y-auto custom-scrollbar relative z-10 p-0 w-full flex-grow">
                 <div className="relative px-5 py-6 sm:px-8 sm:py-8">
                   <DialogHeader className="relative text-center mb-6">
                     <div className="reveal-up stagger-1 mx-auto mb-3 inline-flex items-center gap-2 rounded-full border border-secondary/30 bg-secondary/10 px-3 py-1 text-[8px] sm:text-[9px] font-bold tracking-[0.15em] uppercase text-secondary">
@@ -166,7 +190,7 @@ const Index = () => {
 
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-12 mb-6">
                     {/* Quick Insight Card - Fixed Mobile Order */}
-                    <div className="reveal-up stagger-1 md:col-span-4 group relative overflow-hidden rounded-xl glass-morphism p-4 transition-all duration-500 hover:bg-white/5 order-2 md:order-1">
+                    <div className="reveal-up stagger-1 md:col-span-4 group relative overflow-hidden rounded-xl glass-morphism p-4 transition-all duration-500 hover:-translate-y-1 hover:border-secondary/20 hover:bg-white/5 order-2 md:order-1">
                       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary/20 border border-secondary/30 mb-3">
                         <Lightbulb className="h-5 w-5 text-secondary" />
                       </div>
@@ -197,7 +221,7 @@ const Index = () => {
                     {/* Vibe & Details Column */}
                     <div className="md:col-span-4 flex flex-col gap-3 order-3">
                       {/* Lucky Color */}
-                      <div className="reveal-up stagger-3 group relative overflow-hidden rounded-xl glass-morphism p-4 transition-all duration-500 hover:bg-white/5">
+                      <div className="reveal-up stagger-3 group relative overflow-hidden rounded-xl glass-morphism p-4 transition-all duration-500 hover:-translate-y-1 hover:border-secondary/20 hover:bg-white/5">
                         <div className="flex items-center gap-2 mb-2">
                           <Palette className="h-4 w-4 text-secondary" />
                           <h4 className="text-[10px] font-bold uppercase tracking-widest text-secondary/80">Vibrational Match</h4>
@@ -218,7 +242,7 @@ const Index = () => {
                       </div>
 
                       {/* Date of Birth */}
-                      <div className="reveal-up stagger-4 group relative overflow-hidden rounded-xl glass-morphism p-4 transition-all duration-500 hover:bg-white/5">
+                      <div className="reveal-up stagger-4 group relative overflow-hidden rounded-xl glass-morphism p-4 transition-all duration-500 hover:-translate-y-1 hover:border-secondary/20 hover:bg-white/5">
                         <div className="flex items-center gap-2 mb-2">
                           <CalendarIcon className="h-4 w-4 text-secondary" />
                           <h4 className="text-[10px] font-bold uppercase tracking-widest text-secondary/80">Foundation</h4>
@@ -228,35 +252,204 @@ const Index = () => {
                     </div>
                   </div>
 
-                  <div className="reveal-up stagger-4 flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-white/10 group">
-                    <div className="text-[10px] sm:text-[10px] leading-relaxed text-white/40 max-w-[280px] text-center sm:text-left">
-                      Full name-based analysis included in premium.
-                      <div className="mt-0.5 opacity-50 italic">
-                        {freeReport?.disclaimer}
+                  {/* Premium Teaser Sections */}
+                  <div className="space-y-4 mb-8">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="h-px bg-gradient-to-r from-transparent via-secondary/40 to-secondary/60 flex-grow" />
+                      <span className="text-sm sm:text-base font-black uppercase tracking-[0.25em] text-gradient-gold drop-shadow-sm">Premium Insights</span>
+                      <div className="h-px bg-gradient-to-l from-transparent via-secondary/40 to-secondary/60 flex-grow" />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {freeReport?.premiumTeasers.map((teaser, idx) => (
+                        <div key={idx} className="group relative overflow-hidden rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-[transform,background-color,border-color,box-shadow] duration-500 hover:-translate-y-1 hover:border-secondary/30 hover:bg-white/[0.04]">
+                          <div className="flex items-center gap-2 mb-2 w-full">
+                            <Lock className="h-3 w-3 text-secondary/60 shrink-0" />
+                            <h4 className="text-[12px] sm:text-[13px] font-bold text-white tracking-tight leading-none truncate flex-grow">
+                              {teaser.title}
+                            </h4>
+                          </div>
+                          <div className="relative mt-2">
+                            <p
+                              className="text-[10px] leading-relaxed text-white/60 select-none px-1"
+                              style={{ filter: 'blur(1.5px)', willChange: 'filter' }}
+                            >
+                              {teaser.content}
+                            </p>
+
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none">
+                              <span className="text-[8px] font-bold uppercase tracking-widest text-secondary bg-black/80 px-2 py-1 rounded-full border border-secondary/30 shadow-lg backdrop-blur-sm">
+                                Unlock to Read
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Core Premium Modules Section */}
+                  <div className="space-y-4 mb-10">
+                    <div className="flex items-center gap-4 mb-8">
+                      <div className="h-px bg-gradient-to-r from-transparent via-secondary/40 to-secondary/60 flex-grow" />
+                      <span className="text-sm sm:text-base font-black uppercase tracking-[0.25em] text-gradient-gold drop-shadow-sm text-center">Included in Full Report</span>
+                      <div className="h-px bg-gradient-to-l from-transparent via-secondary/40 to-secondary/60 flex-grow" />
+                    </div>
+
+                    <div className="space-y-3">
+                      {freeReport?.premiumModules.map((module, idx) => (
+                        <div key={idx} className="group relative overflow-hidden rounded-xl border border-white/5 bg-secondary/[0.03] p-4 transition-[transform,background-color,border-color,box-shadow] duration-500 hover:-translate-y-1 hover:bg-secondary/[0.08] hover:border-secondary/40 shadow-sm hover:shadow-secondary/5">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 mt-0.5">
+                              <span className="material-icons-round text-secondary/70 text-xl">{module.icon}</span>
+                            </div>
+                            <div className="flex-grow text-left">
+                              <h4 className="text-sm sm:text-[15px] font-black text-white mb-2 uppercase tracking-wide text-left leading-snug">{module.title}</h4>
+                              <div className="relative text-left mt-1">
+                                <p
+                                  className="text-[11px] leading-relaxed text-white/40 pr-8 text-left select-none"
+                                  style={{ filter: 'blur(1.5px)', willChange: 'filter' }}
+                                >
+                                  {module.description}
+                                </p>
+
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                  <span className="text-[8px] font-bold uppercase tracking-widest text-secondary bg-black/80 px-2 py-1 rounded-full border border-secondary/30 shadow-lg backdrop-blur-sm">
+                                    Unlock to Read
+                                  </span>
+                                </div>
+
+                                <div className="absolute right-0 top-0 opacity-40 group-hover:opacity-0 transition-opacity">
+                                  <Lock className="h-3 w-3 text-secondary" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Expanded Cosmic Remedies Library (Brighter & More Premium) */}
+                  <div className="relative space-y-8 mb-12">
+                    {/* Vibrant Background Glow for Section */}
+                    <div className="absolute inset-0 -z-10 bg-secondary/5 blur-[80px] rounded-full opacity-60" />
+
+                    <div className="flex flex-col items-center gap-2 mb-6">
+                      <div className="flex items-center w-full gap-4">
+                        <div className="h-px bg-gradient-to-r from-transparent via-secondary/40 to-secondary/60 flex-grow" />
+                        <span className="text-lg sm:text-xl font-black uppercase tracking-[0.2em] text-gradient-gold drop-shadow-sm">
+                          The Cosmic Remedies Library
+                        </span>
+                        <div className="h-px bg-gradient-to-l from-transparent via-secondary/40 to-secondary/60 flex-grow" />
+                      </div>
+                      <div className="text-center max-w-xl mx-auto px-4 mt-2">
+                        <p className="text-[13px] sm:text-[14px] text-white/70 leading-relaxed font-medium italic">
+                          Align with the hidden frequencies of your numbers. Explore spiritual rituals, manifestation days, and energy-shifting remedies tailored specifically for your vibrational blueprint.
+                        </p>
                       </div>
                     </div>
 
-                    <Button
-                      className="w-full sm:w-auto gradient-gold text-secondary-foreground shadow-2xl hover:-translate-y-1 transition-all duration-500 px-6 py-5 text-[10px] font-black uppercase tracking-[0.15em] premium-glow glow-pulse group/btn"
-                      style={{
-                        '--glow-color': `${freeReport?.luckyColor.hex}44`,
-                        '--glow-color-bright': `${freeReport?.luckyColor.hex}aa`,
-                      } as React.CSSProperties}
-                      onClick={() => {
-                        setIsSampleResultOpen(false);
-                        document.getElementById("premium-report")?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
-                      }}
-                      type="button"
-                    >
-                      <Crown className="mr-2 h-5 w-5 fill-current transition-transform duration-500 group-hover/btn:rotate-12" />
+                    <div className="grid grid-cols-1 gap-6 pr-0">
+                      {[
+                        { num: 1, tag: "The Fearless Pioneer", line: "Master the art of focused leadership and original action." },
+                        { num: 2, tag: "The Intuitive Peacekeeper", line: "Harness the power of emotional harmony and sacred partnerships." },
+                        { num: 3, tag: "The Creative Manifestor", line: "Unlock the flow of creative expression and contagious joy." },
+                        { num: 4, tag: "The Divine Architect", line: "Build a foundation of absolute stability and mental strength." },
+                        { num: 5, tag: "The Dynamic Catalyst", line: "Balance wild freedom with intentional cosmic focus." },
+                        { num: 6, tag: "The Radiant Healer", line: "Protect your energy while nurturing the world with love." },
+                        { num: 7, tag: "The Mystic Seeker", line: "Decode the deep secrets of your inner wisdom and clarity." },
+                        { num: 8, tag: "The Abundance Master", line: "Step into your power of success and material alignment." },
+                        { num: 9, tag: "The Golden Humanitarian", line: "Align with the high frequency of universal compassion." }
+                      ].map((path) => (
+                        <div
+                          key={path.num}
+                          className={`relative group/path overflow-hidden rounded-2xl border transition-all duration-500 hover:-translate-y-1 ${Number(freeReport?.lifePath) === path.num ? 'border-secondary/50 bg-[#160f2e] shadow-[0_0_30px_rgba(234,179,8,0.1)]' : 'border-white/10 bg-[#120a24]'}`}
+                        >
+                          {Number(freeReport?.lifePath) === path.num && (
+                            <div className="absolute top-0 right-0 p-3">
+                              <div className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-2.5 py-1 rounded-full shadow-xl">
+                                <Star className="h-2.5 w-2.5 fill-current animate-pulse" />
+                                <span className="text-[8px] font-black uppercase tracking-tighter">Your Path</span>
+                              </div>
+                            </div>
+                          )}
 
-                      Upgrade to Premium — ₹49
-                    </Button>
+                          <div className="p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-secondary/40 to-secondary/10 flex items-center justify-center text-secondary font-black text-xl border border-secondary/30 shadow-inner">
+                                {path.num}
+                              </div>
+                              <div className="text-left">
+                                <h4 className="text-[14px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                  {path.tag}
+                                  <Sparkles className="h-3 w-3 text-secondary/40 opacity-0 group-hover/path:opacity-100 transition-opacity" />
+                                </h4>
+                                <p className="text-[11px] text-white/50 leading-relaxed font-medium">{path.line}</p>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3">
+                              {[1, 2, 3].map((r) => (
+                                <div key={r} className="relative py-4 px-2 rounded-xl bg-black/40 border border-white/5 flex flex-col items-center justify-center gap-2 group/remedy transition-all duration-300 hover:border-secondary/40 hover:bg-secondary/[0.02]">
+                                  <span className="text-[8px] font-bold text-white/40 uppercase tracking-widest transition-colors group-hover/remedy:text-secondary/60 text-center">Remedy {r}</span>
+                                  <div className="p-1.5 rounded-full bg-white/5 border border-white/10 group-hover/remedy:border-secondary/20 transition-all">
+                                    <Lock className="h-3 w-3 text-white/20 group-hover/remedy:text-secondary group-hover/remedy:animate-pulse" />
+                                  </div>
+
+                                  {/* Premium Hover Overlay - Enhanced */}
+                                  <div className="absolute inset-0 bg-[#0a0518]/80 backdrop-blur-[4px] opacity-0 group-hover/remedy:opacity-100 transition-all duration-300 flex flex-col items-center justify-center rounded-xl scale-95 group-hover/remedy:scale-100 border border-secondary/30">
+                                    <div className="p-2 rounded-full bg-secondary text-secondary-foreground mb-1.5 shadow-lg shadow-secondary/40">
+                                      <Lock className="h-3.5 w-3.5 fill-current" />
+                                    </div>
+                                    <span className="text-[7px] font-black text-secondary uppercase tracking-[0.25em]">Unlock</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="p-6 rounded-2xl bg-gradient-to-br from-secondary/20 via-secondary/5 to-transparent border border-secondary/30 text-center shadow-2xl relative overflow-hidden group">
+                      <div className="absolute inset-0 bg-secondary/5 -translate-x-[100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out" />
+                      <p className="text-[11px] text-white/80 leading-relaxed font-semibold relative z-10 text-center flex items-center justify-center gap-2">
+                        <Sparkles className="h-4 w-4 text-secondary shrink-0" />
+                        Unlock 12+ paths including your personalized Manifestation Day, Ritual Color, and 5-Min Alignment Shifts.
+                      </p>
+                    </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Sticky Footer CTA - Always visible at bottom of modal */}
+              <div className="relative z-30 bg-[#0a0518]/90 backdrop-blur-xl border-t border-white/10 p-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-[9px] sm:text-[10px] leading-tight text-white/40 max-w-[280px] text-center sm:text-left">
+                  Full name-based analysis included in premium.
+                  <div className="mt-0.5 opacity-50 italic">
+                    {freeReport?.disclaimer}
+                  </div>
+                </div>
+
+                <Button
+                  className="w-full sm:w-auto gradient-gold text-secondary-foreground shadow-2xl hover:-translate-y-1 transition-all duration-500 px-6 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] premium-glow glow-pulse group/btn"
+                  style={{
+                    '--glow-color': `${freeReport?.luckyColor.hex}44`,
+                    '--glow-color-bright': `${freeReport?.luckyColor.hex}aa`,
+                  } as React.CSSProperties}
+                  onClick={() => {
+                    setIsSampleResultOpen(false);
+                    document.getElementById("premium-report")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
+                  }}
+                  type="button"
+                >
+                  <Crown className="mr-2 h-4 w-4 sm:h-5 sm:w-5 fill-current transition-transform duration-500 group-hover/btn:rotate-12" />
+                  Upgrade to Premium — ₹49
+                </Button>
               </div>
             </div>
           </DialogContent>
@@ -514,7 +707,7 @@ const Index = () => {
                   </div>
                   <h3 className="text-xl font-bold mb-2">Life Path Number</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Reveals your greater purpose, including strengths, weaknesses, talents, and ambitions.
+                    Reveals your greater purpose, including strengths, challenges, talents, and ambitions.
                   </p>
                   <div className="p-3 bg-background rounded-lg border border-border">
                     <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Example Result</div>
@@ -794,7 +987,7 @@ const Index = () => {
             </div>
           </div>
         </footer>
-      </div>
+      </div >
     );
   }
 

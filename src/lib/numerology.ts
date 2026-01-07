@@ -19,16 +19,118 @@ export function reduceToSingleDigit(num: number): number {
   return num;
 }
 
+const remediesData: Record<string, { habit: string; color: string; bestDay: string; quickTip: string; details: string[] }> = {
+  "1": {
+    "habit": "Start your day by writing one main task you often want to complete.",
+    "color": "Using shades of red or maroon can support confidence and focus on important days.",
+    "bestDay": "Monday",
+    "quickTip": "A short 5-minute action may help you use your leadership energy in the right direction.",
+    "details": [
+      "Writing down one main task may help align your leadership energy.",
+      "Taking short breaks instead of pushing continuously can often improve clarity.",
+      "Using red or maroon tones may support your natural drive and decision-making."
+    ]
+  },
+  "2": {
+    "habit": "Practice sharing your opinion clearly, which may help reduce emotional overload.",
+    "color": "Soft blue or white tones around you can often support peace and clarity.",
+    "bestDay": "Wednesday",
+    "quickTip": "Spending a few minutes daily in a calm environment may help you feel more emotionally balanced.",
+    "details": [
+      "Sharing your thoughts clearly once a day can support emotional balance.",
+      "Quiet time in a calm environment often helps reduce internal stress.",
+      "Using light blue shades may help maintain your natural diplomatic peace."
+    ]
+  },
+  "3": {
+    "habit": "Spending 10 minutes daily on creative expression can often keep your energy positive.",
+    "color": "Yellow accents may help boost your motivation and natural sense of joy.",
+    "bestDay": "Friday",
+    "quickTip": "Finishing one task before starting another may help improve your daily consistency.",
+    "details": [
+      "Daily creative time can often support a more positive vibrational flow.",
+      "Focusing on completion before starting new projects may help steady your energy.",
+      "Adding yellow to your surroundings can often support your expressive nature."
+    ]
+  },
+  "4": {
+    "habit": "Creating a simple daily routine can often provide a sense of mental strength.",
+    "color": "Earthy tones like brown may help you feel more grounded and focused.",
+    "bestDay": "Tuesday",
+    "quickTip": "Breaking large tasks into small steps often reduces stress and can improve productivity.",
+    "details": [
+      "A steady routine may help build a stronger mental foundation.",
+      "Dividing big goals into micro-steps can often make progress feel more stable.",
+      "Using earthy colors may help align you with your natural building energy."
+    ]
+  },
+  "5": {
+    "habit": "Adding planned variety to your day may help keep you energized without losing focus.",
+    "color": "Green or teal shades can often support your natural sense of balance and flexibility.",
+    "bestDay": "Thursday",
+    "quickTip": "A short pause before making quick decisions may help bring better daily clarity.",
+    "details": [
+      "Small daily changes can often prevent energy stagnation.",
+      "Pausing before acting can support better decision-making outcomes.",
+      "Green tones in your environment may help stabilize your adventurous spirit."
+    ]
+  },
+  "6": {
+    "habit": "Setting healthy boundaries while helping others can often protect your personal energy.",
+    "color": "Soft green or pink tones may help you feel more calm and supported.",
+    "bestDay": "Saturday",
+    "quickTip": "Spending a few minutes daily on self-care can often improve your emotional balance.",
+    "details": [
+      "Healthy boundaries often support better long-term harmony.",
+      "Small acts of self-care may help maintain your nurturing capacity.",
+      "Soft pastel tones can often support a more peaceful domestic vibration."
+    ]
+  },
+  "7": {
+    "habit": "Spending 10–15 minutes alone for reflection can often strengthen your inner clarity.",
+    "color": "Deep blue or indigo may help support your focus and sense of inner peace.",
+    "bestDay": "Sunday",
+    "quickTip": "Writing down your thoughts instead of keeping them inside often reduces mental overload.",
+    "details": [
+      "Quiet reflection time may help sharpen your intuitive insights.",
+      "Journaling your thoughts can often clear mental fog and support focus.",
+      "Indigo or deep blue shades may help align you with deeper wisdom."
+    ]
+  },
+  "8": {
+    "habit": "Tracking one important goal weekly can often keep your energy aligned with success.",
+    "color": "Dark blue or deep green shades may support your confidence and sense of control.",
+    "bestDay": "Monday",
+    "quickTip": "Balancing your ambition with regular rest may often help improve long-term success.",
+    "details": [
+      "Weekly goal tracking can support better material and spiritual alignment.",
+      "Planned rest intervals often improve overall efficiency and focus.",
+      "Deep, authoritative colors may support your natural leadership presence."
+    ]
+  },
+  "9": {
+    "habit": "Practicing the act of letting go of old patterns can often bring emotional freedom.",
+    "color": "Purple or magenta tones may help support your sense of emotional balance.",
+    "bestDay": "Friday",
+    "quickTip": "Expressing emotions creatively may help keep your vibrational energy more positive.",
+    "details": [
+      "Releasing what no longer serves you can often open paths to new growth.",
+      "Creative emotional expression may help maintain a more balanced outlook.",
+      "Magenta or purple accents can often support your humanitarian spirit."
+    ]
+  }
+};
+
 // Calculate Life Path Number from DOB
 export function calculateLifePathNumber(dob: Date): number {
   const day = dob.getDate();
   const month = dob.getMonth() + 1;
   const year = dob.getFullYear();
-  
+
   const sum = String(day).split('').reduce((a, d) => a + parseInt(d), 0) +
-              String(month).split('').reduce((a, d) => a + parseInt(d), 0) +
-              String(year).split('').reduce((a, d) => a + parseInt(d), 0);
-  
+    String(month).split('').reduce((a, d) => a + parseInt(d), 0) +
+    String(year).split('').reduce((a, d) => a + parseInt(d), 0);
+
   return reduceToSingleDigit(sum);
 }
 
@@ -225,6 +327,45 @@ export function getPersonalityTraits(num: number): string {
   return traits[num] || traits[9];
 }
 
+// Friendly numbers based on compatibility
+export function getFriendlyNumbers(num: number): number[] {
+  const map: Record<number, number[]> = {
+    1: [1, 3, 5, 7, 9], 2: [2, 4, 6, 8], 3: [1, 3, 5, 6, 9],
+    4: [2, 4, 6, 8], 5: [1, 3, 5, 9], 6: [2, 3, 6, 9],
+    7: [1, 4, 5, 7], 8: [2, 4, 6, 8], 9: [1, 3, 5, 6, 9]
+  };
+  const k = num > 9 ? reduceToSingleDigit(num) : num;
+  return map[k] || [1, 5, 9];
+}
+
+// Enemy/Challenge numbers
+export function getEnemyNumbers(num: number): number[] {
+  const map: Record<number, number[]> = {
+    1: [2, 4, 6], 2: [1, 5, 7], 3: [4, 7, 8],
+    4: [1, 3, 5, 9], 5: [2, 4, 6], 6: [1, 5, 7],
+    7: [2, 3, 6, 8], 8: [1, 3, 5, 7, 9], 9: [4, 8]
+  };
+  const k = num > 9 ? reduceToSingleDigit(num) : num;
+  return map[k] || [2, 8];
+}
+
+// Karmic Lesson/Law based on Life Path
+export function getKarmicLaw(num: number): { title: string; desc: string } {
+  const map: Record<number, { title: string; desc: string }> = {
+    1: { title: "Law of Independence", desc: "You must learn to stand on your own feet without dominating others." },
+    2: { title: "Law of Harmony", desc: "You must learn to cooperate without losing your own identity." },
+    3: { title: "Law of Expression", desc: "You must learn to speak your truth without exaggeration or fear." },
+    4: { title: "Law of Stability", desc: "You must learn to build slowly and value the process over the shortcut." },
+    5: { title: "Law of Freedom", desc: "You must learn that true freedom comes from within, not just from changing locations." },
+    6: { title: "Law of Responsibility", desc: "You must learn to help others without carrying their burdens for them." },
+    7: { title: "Law of Wisdom", desc: "You must learn to trust your own mind and intuition over outside opinions." },
+    8: { title: "Law of Abundance", desc: "You must learn to balance material wealth with spiritual integrity." },
+    9: { title: "Law of Compassion", desc: "You must learn to love unconditionally and let go of the past." }
+  };
+  const k = num > 9 ? reduceToSingleDigit(num) : num;
+  return map[k] || { title: "Law of Progression", desc: "You are learning to move forward with grace." };
+}
+
 // Complete numerology reading
 export interface NumerologyReading {
   name: string;
@@ -239,6 +380,16 @@ export interface NumerologyReading {
   personalityTraits: string;
   luckyNumbers: number[];
   luckyColor: { name: string; hex: string };
+  friendlyNumbers: number[];
+  enemyNumbers: number[];
+  karmicLaw: { title: string; desc: string };
+  remedies: {
+    habit: string;
+    color: string;
+    bestDay: string;
+    quickTip: string;
+    details: string[];
+  };
 }
 
 export function generateReading(name: string, dob: Date): NumerologyReading {
@@ -246,7 +397,7 @@ export function generateReading(name: string, dob: Date): NumerologyReading {
   const expressionNumber = calculateExpressionNumber(name);
   const soulUrgeNumber = calculateSoulUrgeNumber(name);
   const personalityNumber = calculatePersonalityNumber(name);
-  
+
   return {
     name,
     dob,
@@ -260,6 +411,13 @@ export function generateReading(name: string, dob: Date): NumerologyReading {
     personalityTraits: getPersonalityTraits(personalityNumber),
     luckyNumbers: getLuckyNumbers(lifePathNumber),
     luckyColor: getLuckyColor(lifePathNumber),
+    friendlyNumbers: getFriendlyNumbers(lifePathNumber),
+    enemyNumbers: getEnemyNumbers(lifePathNumber),
+    karmicLaw: getKarmicLaw(lifePathNumber),
+    remedies: (function () {
+      const key = lifePathNumber > 9 ? String(reduceToSingleDigit(lifePathNumber)) : String(lifePathNumber);
+      return remediesData[key] || remediesData["1"];
+    })()
   };
 }
 
@@ -277,6 +435,22 @@ export interface FreeNumerologyReport {
   cta: string;
   disclaimer: string;
   text: string;
+  premiumTeasers: {
+    title: string;
+    content: string;
+  }[];
+  premiumModules: {
+    title: string;
+    description: string;
+    icon: string;
+  }[];
+  remedies: {
+    habit: string;
+    color: string;
+    bestDay: string;
+    quickTip: string;
+    details: string[];
+  };
 }
 
 function formatDobDDMMYYYY(dob: Date): string {
@@ -387,5 +561,73 @@ export function generateFreeReportFromDob(dob: Date): FreeNumerologyReport {
     cta,
     disclaimer,
     text: finalText,
+    premiumTeasers: [
+      {
+        title: "🔒 One habit blocking your growth",
+        content: "A subtle subconscious pattern might be keeping you from reaching your full potential. This ritual often feels comforting but ultimately limits your expansion into new opportunities."
+      },
+      {
+        title: "🔒 Inner conflict you may face quietly",
+        content: "There is a silent tug-of-war between your deep-seated needs and the image you present to the world. Balancing these internal forces is key to your peace of mind."
+      },
+      {
+        title: "🔒 Why you feel misunderstood at times",
+        content: "Your unique vibrational frequency can sometimes be tuned to a different channel than those around you. Understanding this gap helps bridge the communication barrier."
+      },
+      {
+        title: "🔒 Decision-making pattern to be aware of",
+        content: "You have a natural tendency to process choices in a specific way that can lead to cycles of hesitation or over-analysis. Awareness of this flow helps you act with more certainty."
+      },
+      {
+        title: "🔒 What drains your energy faster",
+        content: "Certain environments and social interactions impact your life path more intensely than others. Identifying these energetic leaks is vital for maintaining your vitality."
+      },
+      {
+        title: "🔒 Practical remedies to balance this number",
+        content: "Simple daily shifts in your physical surroundings and morning habits can dramatically improve your alignment. These remedies help stabilize your core cosmic frequency."
+      }
+    ],
+    premiumModules: [
+      {
+        title: "Your Personal Growth Blueprint",
+        description: "A comprehensive map of where you naturally thrive and where your energy requires more focus. This blueprint shifts your mindset from analysis to actionable direction.",
+        icon: "description"
+      },
+      {
+        title: "Do This, Avoid This (Guidance)",
+        description: "Clear, number-based boundaries. Discover the 3 specific habits to embrace and the 3 subtle pitfalls to sidestep for your life path.",
+        icon: "spellcheck"
+      },
+      {
+        title: "Work Style & Career Environment",
+        description: "Avoid the wrong environment. We decode whether you thrive in solo flexibility or team structures, and the specific career settings that match your number.",
+        icon: "work"
+      },
+      {
+        title: "Emotional Pattern Decoder",
+        description: "Understand your hidden stress triggers. This module explains how you process emotions and what specific expectations might be draining your energy.",
+        icon: "psychology"
+      },
+      {
+        title: "Decision-Making Guide",
+        description: "Stop the hesitation. Learn your natural decision style and when it is astronomically better to wait versus when to take immediate action.",
+        icon: "gavel"
+      },
+      {
+        title: "Relationship Communication Style",
+        description: "Improve your connection with others. We analyze how you express yourself and why you might be misinterpreted by different numbers.",
+        icon: "forum"
+      },
+      {
+        title: "7-Day Balance Practice (Mini Plan)",
+        description: "A step-by-step 7-day plan to reset your energy. Each day features a specific habit, color, and reflection to bring you back to clarity.",
+        icon: "event_repeat"
+      }
+    ],
+    remedies: (function () {
+      // For master numbers 11 -> 2, 22 -> 4, 33 -> 6
+      const key = lifePath > 9 ? String(reduceToSingleDigit(lifePath)) : String(lifePath);
+      return remediesData[key] || remediesData["1"];
+    })()
   };
 }

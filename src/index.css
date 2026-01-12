@@ -364,3 +364,94 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--secondary));
 }
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.floating-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+.card-interactive {
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.card-interactive:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5), 0 0 25px rgba(234, 179, 8, 0.2);
+  border-color: rgba(234, 179, 8, 0.6) !important;
+}
+
+.card-interactive::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(234, 179, 8, 0.1) 0%, transparent 80%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.card-interactive:hover::after {
+  opacity: 1;
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(234, 179, 8, 0.3), 0 0 3px rgba(234, 179, 8, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.6), 0 0 10px rgba(234, 179, 8, 0.3);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* Calendar Custom Premium Scrollbar */
+.custom-scrollbar-premium::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar-premium::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar-premium::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, transparent, hsl(var(--secondary) / 0.7), transparent);
+  border-radius: 10px;
+}
+
+.custom-scrollbar-premium {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--secondary) / 0.4) transparent;
+}
+
+.rdp-day:hover:not([aria-selected]) {
+  background-color: hsl(var(--secondary) / 0.15) !important;
+  color: hsl(var(--secondary)) !important;
+  transform: scale(1.1);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.rdp-day_selected {
+  background-color: hsl(var(--secondary)) !important;
+  color: hsl(var(--secondary-foreground)) !important;
+  box-shadow: 0 0 20px 2px hsl(var(--secondary) / 0.4) !important;
+  transform: scale(1.1);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}

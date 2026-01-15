@@ -400,26 +400,27 @@ const Index = () => {
                       <div className="h-px bg-gradient-to-l from-transparent via-secondary/40 to-secondary/60 flex-grow" />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {freeReport?.premiumTeasers.map((teaser, idx) => (
-                        <div key={idx} className="group relative overflow-hidden rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-[transform,background-color,border-color,box-shadow] duration-500 hover:-translate-y-1 hover:border-secondary/30 hover:bg-white/[0.04]">
-                          <div className="flex items-center gap-2 mb-2 w-full">
-                            <Lock className="h-3 w-3 text-secondary/60 shrink-0" />
-                            <h4 className="text-[12px] sm:text-[13px] font-bold text-white tracking-tight leading-none truncate flex-grow">
+                        <div key={idx} className="group relative overflow-hidden rounded-[1.5rem] border border-white/5 bg-[#030303]/60 p-5 transition-all duration-500 hover:border-secondary/30 shadow-lg">
+                          {/* Razor-thin highlight */}
+                          <div className="absolute inset-0 border border-transparent group-hover:border-secondary/10 rounded-[1.5rem] pointer-events-none transition-all duration-500" />
+
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="p-2 rounded-xl bg-secondary/10 border border-secondary/20">
+                              <Lock className="h-4 w-4 text-secondary/70" />
+                            </div>
+                            <h4 className="text-[13px] font-black text-white uppercase tracking-tight truncate">
                               {teaser.title}
                             </h4>
                           </div>
-                          <div className="relative mt-2">
-                            <p
-                              className="text-[10px] leading-relaxed text-white/60 select-none px-1"
-                              style={{ filter: 'blur(1.5px)', willChange: 'filter' }}
-                            >
+                          <div className="relative">
+                            <p className="text-[11px] leading-relaxed text-white/40 select-none px-1 italic blur-[1.2px]">
                               {teaser.content}
                             </p>
-
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none">
-                              <span className="text-[8px] font-bold uppercase tracking-widest text-secondary bg-black/80 px-2 py-1 rounded-full border border-secondary/30 shadow-lg backdrop-blur-sm">
-                                Unlock to Read
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                              <span className="text-[7px] font-black uppercase tracking-[0.2em] text-secondary bg-black/80 px-2 py-1 rounded-full border border-secondary/20 shadow-xl">
+                                Unlock Insight
                               </span>
                             </div>
                           </div>
@@ -436,32 +437,31 @@ const Index = () => {
                       <div className="h-px bg-gradient-to-l from-transparent via-secondary/40 to-secondary/60 flex-grow" />
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-6">
                       {freeReport?.premiumModules.map((module, idx) => (
-                        <div key={idx} className="group relative overflow-hidden rounded-xl border border-white/5 bg-secondary/[0.03] p-4 transition-[transform,background-color,border-color,box-shadow] duration-500 hover:-translate-y-1 hover:bg-secondary/[0.08] hover:border-secondary/40 shadow-sm hover:shadow-secondary/5">
-                          <div className="flex items-start gap-4">
-                            <div className="flex-shrink-0 mt-0.5">
-                              <span className="material-icons-round text-secondary/70 text-xl">{module.icon}</span>
+                        <div
+                          key={idx}
+                          className="group relative overflow-hidden rounded-[1.5rem] border border-white/5 bg-[#030303] p-5 pt-8 md:p-6 transition-all duration-500 hover:border-secondary/30 shadow-xl"
+                        >
+                          {/* Floating Icon for Mobile */}
+                          <div className="absolute -top-6 md:-top-7 left-5 p-3 rounded-2xl bg-[#0d000d] border border-secondary/20 shadow-2xl group-hover:scale-110 group-hover:bg-secondary/10 transition-all duration-500">
+                            <span className="material-icons-round text-secondary text-xl font-bold">{module.icon}</span>
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-[15px] font-black text-white uppercase tracking-wider">{module.title}</h4>
+                              <Lock className="h-3.5 w-3.5 text-secondary/40 shrink-0" />
                             </div>
-                            <div className="flex-grow text-left">
-                              <h4 className="text-sm sm:text-[15px] font-black text-white mb-2 uppercase tracking-wide text-left leading-snug">{module.title}</h4>
-                              <div className="relative text-left mt-1">
-                                <p
-                                  className="text-[11px] leading-relaxed text-white/40 pr-8 text-left select-none"
-                                  style={{ filter: 'blur(1.5px)', willChange: 'filter' }}
-                                >
-                                  {module.description}
-                                </p>
 
-                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                                  <span className="text-[8px] font-bold uppercase tracking-widest text-secondary bg-black/80 px-2 py-1 rounded-full border border-secondary/30 shadow-lg backdrop-blur-sm">
-                                    Unlock to Read
-                                  </span>
-                                </div>
-
-                                <div className="absolute right-0 top-0 opacity-40 group-hover:opacity-0 transition-opacity">
-                                  <Lock className="h-3 w-3 text-secondary" />
-                                </div>
+                            <div className="relative">
+                              <p className="text-[11px] leading-relaxed text-white/40 select-none italic blur-[1.2px]">
+                                {module.description}
+                              </p>
+                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                <span className="text-[7px] font-black uppercase tracking-[0.2em] text-secondary bg-black/80 px-2 py-1 rounded-full border border-secondary/20">
+                                  Premium Content
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -777,8 +777,8 @@ const Index = () => {
                   Pythagorean System
                 </div>
 
-                <h1 className="text-4xl md:text-4xl lg:text-5xl font-bold leading-tight mb-3">
-                  Discover your <span className="text-secondary">Destiny</span> through Numbers
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black leading-[1.1] mb-4 tracking-tight">
+                  Discover your <span className="text-secondary">Destiny</span> <br className="hidden sm:block" /> through Numbers
                 </h1>
 
                 <p className="text-base md:text-lg text-muted-foreground mb-5 max-w-lg mx-auto lg:mx-0">
@@ -786,7 +786,7 @@ const Index = () => {
                 </p>
 
                 <div
-                  className="bg-[#1a001a]/80 border border-[#D100D1]/30 p-4 sm:p-5 rounded-2xl shadow-lg max-w-lg mx-auto lg:mx-0 mb-5 relative overflow-hidden group card-interactive floating-animation backdrop-blur-md"
+                  className="bg-[#030303]/90 border border-[#D100D1]/20 p-5 sm:p-6 rounded-[2rem] shadow-2xl max-w-lg mx-auto lg:mx-0 mb-6 relative overflow-hidden group backdrop-blur-xl transition-all duration-500 hover:border-[#D100D1]/40"
                   id="free-sample-card"
                   onMouseMove={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
@@ -873,14 +873,14 @@ const Index = () => {
 
               <div className="flex-1 w-full max-w-md mx-auto lg:mx-0" id="premium-form-container">
                 <div
-                  className="bg-card/95 dark:bg-[#0d091d] glass-panel p-6 rounded-2xl shadow-2xl border-2 border-secondary/40 relative card-interactive transition-all duration-500 hover:border-secondary/70"
+                  className="bg-[#030303]/95 glass-panel p-5 sm:p-6 rounded-[2rem] shadow-2xl border-2 border-secondary/40 relative transition-all duration-500 hover:border-secondary/70"
                   onMouseMove={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
                     e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
                   }}
                 >
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-secondary text-secondary-foreground font-black px-4 py-1 rounded-full text-[11px] shadow-lg border border-white/20 z-30 tracking-wider animate-pulse-glow whitespace-nowrap">
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-secondary text-secondary-foreground font-black px-4 py-1 rounded-full text-[11px] shadow-lg border border-white/20 z-30 tracking-wider whitespace-nowrap">
                     FULL PREMIUM REPORT
                   </div>
                   <div className="text-center mb-3 mt-1">

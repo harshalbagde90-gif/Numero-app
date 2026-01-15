@@ -183,17 +183,18 @@ export function ResultPreview({
   }) => (
     <AccordionItem
       value={id}
-      className="group relative border border-white/5 mb-4 bg-[#030303] rounded-[1.5rem] shadow-2xl transition-all duration-700 overflow-hidden hover:border-amber-500/30 no-zoom"
+      className="group relative border border-white/5 mb-8 md:mb-4 bg-[#030303] rounded-[1.8rem] md:rounded-[1.5rem] shadow-2xl transition-all duration-700 hover:border-amber-500/30 no-zoom"
     >
       {/* Razor-Thin Gold Edge Glow */}
-      <div className="absolute inset-0 border border-transparent group-hover:border-amber-500/10 rounded-[1.5rem] pointer-events-none transition-all duration-700" />
+      <div className="absolute inset-0 border border-transparent group-hover:border-amber-500/10 rounded-[1.8rem] md:rounded-[1.5rem] pointer-events-none transition-all duration-700" />
 
-      <AccordionTrigger className="hover:no-underline py-6 px-5 [&>svg]:text-amber-500/50 [&>svg]:group-hover:text-amber-500 transition-all [&>svg]:transition-all">
-        <div className="flex items-center gap-5 text-left relative z-10">
-          <div className={`p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 shadow-inner group-hover:scale-110 group-hover:bg-amber-500/10 group-hover:border-amber-500/30 transition-all duration-500 ${colorClass}`}>
-            <Icon className="h-5 w-5" />
+      <AccordionTrigger className="hover:no-underline py-5 md:py-6 px-4 md:px-5 [&>svg]:text-amber-500/50 [&>svg]:group-hover:text-amber-500 transition-all [&>svg]:transition-all pt-10 md:pt-6">
+        <div className="flex items-center gap-4 md:gap-5 text-left relative z-10 w-full">
+          {/* Floating Icon for Mobile, Standard for Desktop */}
+          <div className={`absolute -top-14 md:relative md:top-0 left-2 md:left-0 p-3 md:p-3.5 rounded-2xl bg-[#0a0518] md:bg-white/[0.03] border border-amber-500/20 md:border-white/10 shadow-2xl group-hover:scale-110 group-hover:bg-amber-500/10 group-hover:border-amber-500/30 transition-all duration-500 ${colorClass}`}>
+            <Icon className="h-5 w-5 md:h-6 md:w-6" />
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col ml-1 md:ml-0">
             <span className="font-serif text-[18px] md:text-xl text-white tracking-tight font-bold group-hover:text-amber-400 transition-colors duration-500">
               {title}
             </span>
@@ -204,22 +205,22 @@ export function ResultPreview({
         </div>
       </AccordionTrigger>
 
-      <AccordionContent className="px-6 md:px-16 pb-8 relative">
-        {/* Sacred Node Vertical Line - Only visible on desktop for better alignment */}
-        <div className="absolute left-[33px] md:left-[39px] top-6 bottom-12 w-px border-l border-dashed border-white/10 hidden md:block" />
+      <AccordionContent className="px-5 md:px-16 pb-8 relative">
+        {/* Sacred Node Vertical Line - Slimmer on mobile, dashed on desktop */}
+        <div className="absolute left-[26px] md:left-[39px] top-6 bottom-12 w-px border-l border-white/5 md:border-dashed md:border-white/10" />
 
         <div className="space-y-6 relative z-10">
-          <p className="text-white/80 leading-relaxed font-medium text-[15px] md:text-[16px] max-w-3xl border-l-2 border-indigo-500/20 pl-4 py-1 italic">
+          <p className="text-white/80 leading-relaxed font-medium text-[14px] md:text-[16px] max-w-3xl border-l-2 border-indigo-500/20 pl-4 py-1 italic">
             {content.para}
           </p>
 
-          <ul className="space-y-4">
+          <ul className="space-y-5 md:space-y-4">
             {content.points.map((point, idx) => (
-              <li key={idx} className="flex items-start gap-4 text-[14px] md:text-[15px] text-white/70 group/item">
+              <li key={idx} className="flex items-start gap-3 md:gap-4 text-[13px] md:text-[15px] text-white/70 group/item">
                 <div className="relative mt-1.5 flex-shrink-0">
                   {/* Glowing Sacred Node */}
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_#F59E0B] group-hover/item:scale-125 transition-transform" />
-                  <div className="absolute inset-x-[-6px] inset-y-[-6px] border border-amber-500/30 rounded-full scale-0 group-hover/item:scale-100 transition-transform duration-300" />
+                  <div className="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_#F59E0B] group-hover/item:scale-125 transition-transform" />
+                  <div className="absolute inset-x-[-5px] inset-y-[-5px] border border-amber-500/30 rounded-full scale-0 group-hover/item:scale-100 transition-transform duration-300" />
                 </div>
                 <span className="leading-snug group-hover/item:text-white transition-colors duration-300">
                   {point}
@@ -401,13 +402,13 @@ export function ResultPreview({
 
               <button
                 onClick={() => setIsLearningHubOpen(true)}
-                className="relative group px-5 py-2 rounded-full overflow-hidden transition-all duration-300 active:scale-95 animate-shake-glow"
+                className="relative group px-5 py-2 rounded-full overflow-hidden transition-all duration-300 active:scale-95 animate-smooth-shake"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-500 opacity-90 group-hover:opacity-100 transition-opacity" />
                 <div className="absolute inset-0 bg-amber-400 blur-md opacity-50 group-hover:opacity-80 group-hover:blur-lg transition-all animate-pulse" />
-                <span className="relative z-10 text-white flex items-center gap-2 px-1">
-                  <Star className="h-3 w-3 fill-current" />
-                  <span className="tracking-[0.12em] font-black pointer-events-none whitespace-nowrap">Learning Hub</span>
+                <span className="relative z-10 text-[#3d2a1a] flex items-center gap-2 px-1">
+                  <Star className="h-3.5 w-3.5 fill-current" />
+                  <span className="tracking-[0.12em] font-black pointer-events-none whitespace-nowrap text-[12px] md:text-sm">Learning Hub</span>
                 </span>
               </button>
             </div>
@@ -415,23 +416,22 @@ export function ResultPreview({
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsShareModalOpen(true)}
-                className="relative group px-6 py-2.5 rounded-full overflow-hidden transition-all duration-500 active:scale-95 shadow-[0_0_20px_rgba(99,102,241,0.2)]"
+                className="relative group px-6 py-2.5 rounded-full overflow-hidden transition-all duration-500 active:scale-95 shadow-[0_0_25px_rgba(234,179,8,0.1)] animate-smooth-shake"
               >
-                {/* Floating Gold Stroke & Glow */}
-                <div className="absolute inset-0 border border-amber-500/30 rounded-full group-hover:border-amber-400/60 transition-colors pointer-events-none z-20" />
+                {/* Thick Metallic Gold Border */}
+                <div className="absolute inset-0 border-[2px] border-amber-500/60 rounded-full group-hover:border-amber-400 transition-colors pointer-events-none z-20" />
 
-                {/* Aura Pulse Background */}
-                <div className="absolute inset-0 bg-[#1e1b4b] overflow-hidden">
-                  <div className="absolute inset-0 bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors" />
-                  <div className="absolute -inset-2 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                {/* Obsidian Black Background */}
+                <div className="absolute inset-0 bg-[#030303]">
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
 
-                {/* Internal Glow Pulse */}
-                <div className="absolute inset-0 bg-indigo-500/40 blur-xl opacity-0 group-hover:opacity-100 transition-opacity animate-pulse" />
+                {/* Gold Glow Aura */}
+                <div className="absolute inset-0 bg-amber-500/10 blur-xl opacity-0 group-hover:opacity-60 transition-opacity" />
 
-                <span className="relative z-10 text-white flex items-center gap-2.5 px-1">
-                  <Share2 className="h-4 w-4 text-amber-400 group-hover:rotate-12 transition-transform" />
-                  <span className="tracking-[0.15em] font-black text-[10px] uppercase whitespace-nowrap">Magic Link</span>
+                <span className="relative z-10 text-amber-500 group-hover:text-amber-300 flex items-center gap-2.5 px-1 transition-colors">
+                  <Share2 className="h-4 w-4 text-amber-500 group-hover:scale-110 transition-transform" />
+                  <span className="tracking-[0.15em] font-black text-[10px] uppercase whitespace-nowrap">Share Profile</span>
                 </span>
               </button>
             </div>
@@ -498,10 +498,10 @@ export function ResultPreview({
                         <div className="h-[1px] w-full bg-gradient-to-r from-secondary/40 to-transparent" />
                       </div>
 
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="grid grid-cols-2 lg:flex lg:items-center lg:justify-between gap-3">
                         {reading.luckyNumbers.slice(0, 4).map((num, idx) => (
-                          <div key={idx} className="group flex-1 relative h-16 rounded-2xl bg-white/[0.04] border border-white/10 flex flex-col items-center justify-center transition-all duration-500 hover:bg-white/[0.08] hover:border-secondary/40 hover:-translate-y-1">
-                            <span className="text-2xl md:text-3xl font-serif font-black text-gradient-gold group-hover:drop-shadow-[0_0_12px_rgba(234,179,8,0.5)] transition-all">
+                          <div key={idx} className="group relative h-16 md:h-20 rounded-2xl bg-white/[0.04] border border-white/10 flex flex-col items-center justify-center transition-all duration-500 hover:bg-white/[0.08] hover:border-secondary/40 hover:-translate-y-1">
+                            <span className="text-2xl md:text-4xl font-serif font-black text-gradient-gold group-hover:drop-shadow-[0_0_12px_rgba(234,179,8,0.5)] transition-all">
                               {num}
                             </span>
                             <div className="absolute -bottom-1 text-[6px] font-black uppercase tracking-tight text-slate-500 opacity-0 group-hover:opacity-100 group-hover:bottom-2 transition-all">Portal {idx + 1}</div>

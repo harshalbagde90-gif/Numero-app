@@ -5,7 +5,41 @@ import { useRazorpay } from "@/hooks/useRazorpay";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Activity, Calendar as CalendarIcon, Crown, Fingerprint, Lightbulb, Lock, Orbit, Palette, Star, Zap } from "lucide-react";
+import {
+  Activity,
+  Briefcase,
+  Calendar as CalendarIcon,
+  CheckCircle2,
+  Compass,
+  Crown,
+  Fingerprint,
+  Gem,
+  Hash,
+  HeartHandshake,
+  Lightbulb,
+  Lock,
+  Moon,
+  Music,
+  Orbit,
+  Palette,
+  Scale,
+  Shield,
+  Sparkles,
+  Star,
+  StarHalf,
+  VenetianMask,
+  Zap,
+  ChevronRight, // Added
+  Unlock, // Added
+} from "lucide-react";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+  type CarouselApi,
+} from "@/components/ui/carousel";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -22,6 +56,26 @@ type AppState = "landing" | "preview";
 const PRICE = 49; // INR
 
 const Index = () => {
+  const [api, setApi] = useState<CarouselApi>();
+
+  const scrollToTop = () => {
+    const topElement = document.getElementById("top");
+    if (topElement) {
+      topElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  useEffect(() => {
+    if (!api) return;
+
+    const intervalId = setInterval(() => {
+      api.scrollNext();
+    }, 4000);
+
+    return () => clearInterval(intervalId);
+  }, [api]);
   const [state, setState] = useState<AppState>("landing");
   const [reading, setReading] = useState<NumerologyReading | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -46,16 +100,9 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    const html = document.documentElement;
-    if (
-      localStorage.theme === "dark" ||
-      (!("theme" in localStorage) && prefersDark)
-    ) {
-      html.classList.add("dark");
-    } else {
-      html.classList.remove("dark");
-    }
-  }, [prefersDark]);
+    // Enforce Dark Mode Only
+    document.documentElement.classList.add("dark");
+  }, []);
 
   // Session Persistence: Load from localStorage or URL Share Link
   useEffect(() => {
@@ -132,6 +179,20 @@ const Index = () => {
     }
   }, [isUnlocked, reading, state]);
 
+  // Handle auto-scroll to top when transitioning to preview state
+  useEffect(() => {
+    if (state === "preview") {
+      document.body.style.overflow = "auto"; // Force reset body overflow
+      window.scrollTo({ top: 0, behavior: "instant" });
+      // Extra safety: some browsers need a small delay after render
+      const timeoutId = setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: "instant" });
+        document.body.style.overflow = "auto";
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [state]);
+
   const handleReset = () => {
     localStorage.removeItem("numerology_session");
     setReading(null);
@@ -139,19 +200,10 @@ const Index = () => {
     setState("landing");
     setFullName("");
     setFullDob(undefined);
-    window.scrollTo(0, 0);
+    scrollToTop();
   };
 
-  const toggleTheme = () => {
-    const html = document.documentElement;
-    if (html.classList.contains("dark")) {
-      html.classList.remove("dark");
-      localStorage.theme = "light";
-    } else {
-      html.classList.add("dark");
-      localStorage.theme = "dark";
-    }
-  };
+  // Removed toggleTheme to enforce dark mode only
 
   const handleFormSubmit = (name: string, dob: Date) => {
     const newReading = generateReading(name, dob);
@@ -200,6 +252,8 @@ const Index = () => {
         setIsUnlocked(true);
         setIsLoading(false);
         setState("preview");
+        setIsSampleResultOpen(false); // Ensure modal is closed
+        window.scrollTo({ top: 0, behavior: "instant" }); // Instant scroll to top for new view
         toast({
           title: "Payment Successful! 🎉",
           description: "Your full report is now unlocked.",
@@ -226,6 +280,7 @@ const Index = () => {
       () => {
         setIsUnlocked(true);
         setIsLoading(false);
+        window.scrollTo({ top: 0, behavior: "instant" });
         toast({
           title: "Payment Successful! 🎉",
           description: "Your full numerology reading is now unlocked.",
@@ -244,11 +299,11 @@ const Index = () => {
 
   if (state === "landing" || !reading) {
     return (
-      <div className="bg-background text-foreground transition-colors duration-300 min-h-screen flex flex-col">
+      <div id="top" className="bg-background text-foreground transition-colors duration-300 min-h-screen flex flex-col">
         <Dialog open={isSampleResultOpen} onOpenChange={setIsSampleResultOpen}>
           <DialogContent className="w-[95vw] max-w-3xl p-0 border-none bg-transparent shadow-none sm:overflow-hidden overflow-hidden flex flex-col max-h-[90vh]">
             {/* Outer Static Framework - Border & Glow stay here */}
-            <div className="relative w-full rounded-[1.5rem] premium-border-gold shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-[#0a0518]/95 backdrop-blur-2xl flex flex-col h-full overflow-hidden">
+            <div className="relative w-full rounded-[1.5rem] border-2 border-[#D100D1]/40 shadow-[0_0_80px_rgba(0,0,0,0.8)] bg-[#0d000d]/95 backdrop-blur-2xl flex flex-col h-full overflow-hidden">
               <div className="edge-glow z-20 pointer-events-none" />
 
               {/* Premium Cosmic Background Elements - Fixed position */}
@@ -645,10 +700,13 @@ const Index = () => {
                   } as React.CSSProperties}
                   onClick={() => {
                     setIsSampleResultOpen(false);
-                    document.getElementById("premium-report")?.scrollIntoView({
-                      behavior: "smooth",
-                      block: "start",
-                    });
+                    // Add delay to allow modal to close fully and body overflow to reset
+                    setTimeout(() => {
+                      const element = document.getElementById("premium-report");
+                      if (element) {
+                        element.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }
+                    }, 300);
                   }}
                   type="button"
                 >
@@ -664,45 +722,47 @@ const Index = () => {
         <nav className="w-full fixed top-0 z-50 glass-panel bg-background/70 border-b border-border">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
-              <div className="flex items-center gap-2">
-                <span className="material-icons-round text-secondary text-3xl">auto_awesome</span>
-                <span className="font-bold text-xl tracking-tight">NumeroInsight</span>
+              <div className="flex items-center gap-2 group cursor-pointer" onClick={handleReset}>
+                <div className="p-1.5 rounded-lg bg-secondary/10 border border-secondary/20 group-hover:bg-secondary/20 transition-all duration-500">
+                  <Orbit className="h-6 w-6 text-secondary group-hover:rotate-180 transition-transform duration-1000 ease-in-out" />
+                </div>
+                <span className="font-bold text-2xl tracking-tighter group-hover:text-secondary transition-colors">NumGuru</span>
               </div>
-              <div className="hidden md:flex items-center space-x-8">
-                <a className="text-sm font-medium hover:text-secondary transition-colors" href="#free-sample">
+              <div className="hidden md:flex items-center space-x-6">
+                <button
+                  className="text-sm font-medium hover:text-secondary transition-all hover:drop-shadow-[0_0_10px_rgba(234,179,8,0.5)] px-3 py-1.5 rounded-full hover:bg-secondary/5"
+                  onClick={scrollToTop}
+                >
                   Try Free Sample
+                </button>
+                <a className="text-sm font-medium hover:text-secondary transition-all hover:drop-shadow-[0_0_10px_rgba(234,179,8,0.5)] px-3 py-1.5 rounded-full hover:bg-secondary/5" href="#what-is-numerology">
+                  What is Numerology?
                 </a>
-                <a className="text-sm font-medium hover:text-secondary transition-colors" href="#how-it-works">
-                  How it Works
+                <a className="text-sm font-medium hover:text-secondary transition-all hover:drop-shadow-[0_0_10px_rgba(234,179,8,0.5)] px-3 py-1.5 rounded-full hover:bg-secondary/5" href="#premium-report">
+                  Premium Report
                 </a>
-                <a className="text-sm font-medium hover:text-secondary transition-colors" href="#samples">
-                  Sample Report
-                </a>
-                <a className="text-sm font-medium hover:text-secondary transition-colors" href="#testimonials">
+                <a className="text-sm font-medium hover:text-secondary transition-all hover:drop-shadow-[0_0_10px_rgba(234,179,8,0.5)] px-3 py-1.5 rounded-full hover:bg-secondary/5" href="#testimonials">
                   Reviews
                 </a>
-                <button
-                  className="p-2 rounded-full hover:bg-muted transition-colors"
-                  onClick={toggleTheme}
-                  type="button"
-                >
-                  <span className="material-icons-round dark:hidden">dark_mode</span>
-                  <span className="material-icons-round hidden dark:block">light_mode</span>
-                </button>
               </div>
             </div>
           </div>
         </nav>
 
-        <main className="flex-grow pt-14 md:pt-16">
-          <section className="relative isolate pt-4 pb-12 lg:pt-8 lg:pb-16 overflow-hidden">
+        <main id="main-content" className="flex-grow pt-14 md:pt-16">
+          <section id="free-sample" className="relative isolate pt-4 pb-12 lg:pt-8 lg:pb-16 overflow-hidden bg-[#0d000d] scroll-mt-20">
+            {/* Fallback & Loading State Gradient */}
+            <div className="absolute inset-0 z-[-1] bg-gradient-to-br from-[#1a1b3a] via-[#0a0518] to-[#1a1b3a]" />
+
             <video
-              className="absolute inset-0 z-0 h-full w-full object-cover pointer-events-none"
+              className="absolute inset-0 z-0 h-full w-full object-cover pointer-events-none transition-opacity duration-1000"
               src="/vidoes/hero%20sec.mp4"
+              poster="/images/hero-poster.jpg.png"
               autoPlay
               muted
               loop
               playsInline
+              preload="auto"
             />
             <div className="absolute inset-0 z-10 bg-background/60 dark:bg-background/70 pointer-events-none" />
 
@@ -726,15 +786,15 @@ const Index = () => {
                 </p>
 
                 <div
-                  className="bg-card border border-border p-4 sm:p-5 rounded-2xl shadow-lg max-w-lg mx-auto lg:mx-0 mb-5 relative overflow-hidden group card-interactive floating-animation"
-                  id="free-sample"
+                  className="bg-[#1a001a]/80 border border-[#D100D1]/30 p-4 sm:p-5 rounded-2xl shadow-lg max-w-lg mx-auto lg:mx-0 mb-5 relative overflow-hidden group card-interactive floating-animation backdrop-blur-md"
+                  id="free-sample-card"
                   onMouseMove={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
                     e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
                   }}
                 >
-                  <div className="absolute -right-10 -top-10 w-32 h-32 bg-secondary/10 rounded-full blur-2xl group-hover:bg-secondary/20 transition-all duration-500" />
+                  <div className="absolute -right-10 -top-10 w-32 h-32 bg-[#D100D1]/20 rounded-full blur-2xl group-hover:bg-[#D100D1]/30 transition-all duration-500" />
                   <div className="flex items-center gap-2 mb-4 relative z-10">
                     <span className="material-icons-round text-secondary">redeem</span>
                     <h3 className="font-bold text-lg">Try a Free Sample Reading</h3>
@@ -811,7 +871,7 @@ const Index = () => {
                 </div>
               </div>
 
-              <div className="flex-1 w-full max-w-md mx-auto lg:mx-0" id="premium-report">
+              <div className="flex-1 w-full max-w-md mx-auto lg:mx-0" id="premium-form-container">
                 <div
                   className="bg-card/95 dark:bg-[#0d091d] glass-panel p-6 rounded-2xl shadow-2xl border-2 border-secondary/40 relative card-interactive transition-all duration-500 hover:border-secondary/70"
                   onMouseMove={(e) => {
@@ -922,233 +982,806 @@ const Index = () => {
             </div>
           </section>
 
-          <section className="py-20 bg-card" id="samples">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">Sample Reading Insights</h2>
-                <p className="text-muted-foreground max-w-2xl mx-auto">
-                  Here is a preview of what you'll discover in your premium report. We analyze your name and birth date to generate a comprehensive profile.
+          <section className="py-16 md:py-20 relative overflow-hidden" id="samples">
+            {/* Background Video & Black Overlay */}
+            <div className="absolute inset-0 z-0">
+              <video
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full h-full object-cover"
+              >
+                <source src="/vidoes/gradient 2.mp4" type="video/mp4" />
+              </video>
+              <div className="absolute inset-0 bg-black/60" />
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[9px] font-black uppercase tracking-[0.3em] mb-6 shadow-2xl">
+                  Cosmic Preview
+                </div>
+                <h2 className="text-4xl md:text-5xl font-sans font-black mb-4 text-white tracking-tighter leading-none">
+                  Try Your <span className="text-secondary italic drop-shadow-[0_0_20px_rgba(234,179,8,0.4)]">Free Sample</span>
+                </h2>
+                <p className="text-slate-400 max-w-xl mx-auto text-lg leading-relaxed font-semibold">
+                  Stop guessing. Get an instant, high-vibrational snapshot of your numeric DNA. Accurate, fast, and 100% free.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="p-6 rounded-2xl bg-muted border border-border hover:shadow-lg transition-shadow">
-                  <div className="w-12 h-12 rounded-full bg-background flex items-center justify-center mb-4">
-                    <span className="material-icons-round text-secondary text-2xl">fingerprint</span>
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Life Path Number</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Reveals your greater purpose, including strengths, challenges, talents, and ambitions.
-                  </p>
-                  <div className="p-3 bg-background rounded-lg border border-border">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Example Result</div>
-                    <div className="font-semibold text-secondary">Number 7: The Seeker</div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                <div className="group relative p-5 rounded-2xl bg-[#2a002a]/40 backdrop-blur-md border border-white/20 transition-all duration-500 hover:-translate-y-2 hover:border-secondary/50 hover:shadow-[0_20px_40px_rgba(234,179,8,0.1)] overflow-hidden flex flex-col text-left">
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                  <div className="relative z-10">
+                    <div className="flex items-start gap-4 mb-6">
+                      <div className="w-12 h-12 shrink-0 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-secondary group-hover:text-black transition-all duration-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                        <Hash className="h-6 w-6 text-secondary group-hover:text-black transition-colors" />
+                      </div>
+                      <div className="pt-0.5">
+                        <div className="inline-block px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-[8px] font-black uppercase tracking-[0.1em] mb-1.5 border border-secondary/20">
+                          Vibration 01
+                        </div>
+                        <h3 className="text-lg md:text-xl font-sans font-black text-white tracking-tight">Life Path Number</h3>
+                      </div>
+                    </div>
+
+                    <p className="text-slate-400 mb-6 leading-relaxed font-medium text-sm">
+                      The core frequency of your soul. Reveals the innate strengths and the 'Divine Path' you were born to conquer.
+                    </p>
+
+                    <div className="w-full h-px bg-white/5 mb-8" />
+
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-secondary animate-pulse" />
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Instant Reveal</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="p-6 rounded-2xl bg-muted border border-border hover:shadow-lg transition-shadow">
-                  <div className="w-12 h-12 rounded-full bg-background flex items-center justify-center mb-4">
-                    <span className="material-icons-round text-secondary text-2xl">favorite</span>
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Soul Urge</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Uncovers your inner cravings, likes, dislikes, and your deepest heart's desires.
-                  </p>
-                  <div className="p-3 bg-background rounded-lg border border-border">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Example Result</div>
-                    <div className="font-semibold text-secondary">Number 3: Creative Expression</div>
+                <div className="group relative p-5 rounded-2xl bg-[#2a002a]/40 backdrop-blur-md border border-white/20 transition-all duration-500 hover:-translate-y-2 hover:border-secondary/50 hover:shadow-[0_20px_40px_rgba(234,179,8,0.1)] overflow-hidden flex flex-col text-left">
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                  <div className="relative z-10">
+                    <div className="flex items-start gap-4 mb-6">
+                      <div className="w-12 h-12 shrink-0 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-secondary group-hover:text-black transition-all duration-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                        <Zap className="h-6 w-6 text-secondary group-hover:text-black transition-colors" />
+                      </div>
+                      <div className="pt-0.5">
+                        <div className="inline-block px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-[8px] font-black uppercase tracking-[0.1em] mb-1.5 border border-secondary/20">
+                          Vibration 02
+                        </div>
+                        <h3 className="text-lg md:text-xl font-sans font-black text-white tracking-tight">Micro-Remedy</h3>
+                      </div>
+                    </div>
+
+                    <p className="text-slate-400 mb-6 leading-relaxed font-medium text-sm">
+                      Instant alignment hacks to clear energy blocks. Daily rituals to keep your vibration high and attract luck.
+                    </p>
+
+                    <div className="w-full h-px bg-white/5 mb-8" />
+
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-secondary animate-pulse" />
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Locked Inside</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="p-6 rounded-2xl bg-muted border border-border hover:shadow-lg transition-shadow">
-                  <div className="w-12 h-12 rounded-full bg-background flex items-center justify-center mb-4">
-                    <span className="material-icons-round text-secondary text-2xl">palette</span>
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Lucky Colors &amp; Gems</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Personalized suggestions for colors and gemstones that resonate with your vibration.
-                  </p>
-                  <div className="p-3 bg-background rounded-lg border border-border">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Example Result</div>
-                    <div className="font-semibold text-secondary">Deep Blue &amp; Sapphire</div>
+                <div className="group relative p-5 rounded-2xl bg-[#2a002a]/40 backdrop-blur-md border border-white/20 transition-all duration-500 hover:-translate-y-2 hover:border-secondary/50 hover:shadow-[0_20px_40px_rgba(234,179,8,0.1)] overflow-hidden flex flex-col text-left">
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                  <div className="relative z-10">
+                    <div className="flex items-start gap-4 mb-6">
+                      <div className="w-12 h-12 shrink-0 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-secondary group-hover:text-black transition-all duration-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                        <Palette className="h-6 w-6 text-secondary group-hover:text-black transition-colors" />
+                      </div>
+                      <div className="pt-0.5">
+                        <div className="inline-block px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-[8px] font-black uppercase tracking-[0.1em] mb-1.5 border border-secondary/20">
+                          Vibration 03
+                        </div>
+                        <h3 className="text-lg md:text-xl font-sans font-black text-white tracking-tight">Vibrational Color</h3>
+                      </div>
+                    </div>
+
+                    <p className="text-slate-400 mb-6 leading-relaxed font-medium text-sm">
+                      The exact color frequencies that resonate with your numeric DNA. Use them to amplify your presence daily.
+                    </p>
+
+                    <div className="w-full h-px bg-white/5 mb-8" />
+
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-secondary animate-pulse" />
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Daily Hacks</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </section>
 
-          <section className="py-20 relative overflow-hidden">
-            <div className="absolute inset-0 bg-secondary/5 skew-y-3 transform origin-bottom-right scale-110" />
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center gap-12">
-              <div className="flex-1 order-2 md:order-1">
-                <img
-                  alt="Abstract mystical constellation and stars background representing numerology"
-                  className="rounded-2xl shadow-2xl rotate-2 hover:rotate-0 transition-transform duration-500 border-4 border-background w-full object-cover h-80 md:h-96"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAs60hX_nmhbjU55cj1fPsMZfTV4v8RN10FK_L7JjSKaQ6mFK7Rct_1Vaiak4kMcCae-OqtbVq8g0ohbVfbXb3Cb7WYYNn_BNuLZwONJ7cAXj7kKL7VG8QeGDqYvN9rgXVnzUObXJyDHPPaJfKBY5UWq33M7EsQEifT8OIvf7qlkfkr5YU4S_H2tGupseFITy5O6xUXrG2q1K5tBv0C5Ij7fgbYURcEwxXkE7VygKngAsJUJM3OHMSs2OjEQDdQg0JP40E8kkPkVQ"
-                />
-              </div>
-              <div className="flex-1 order-1 md:order-2">
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">What is Numerology?</h2>
-                <div className="space-y-4 text-muted-foreground text-lg leading-relaxed">
-                  <p>
-                    Numerology is the study of the spiritual meaning of numbers. It is an ancient science that dates back thousands of years, with roots in Babylonia, China, and Greece.
-                  </p>
-                  <p>
-                    We utilize the <strong className="text-secondary">Pythagorean system</strong>, which assigns a numerical value to letters in your name to uncover patterns in your personality and life path.
-                  </p>
-                  <p>It's not magic—it's a language. Just as DNA codes our biology, numbers code our vibrational essence.</p>
+          {/* Premium Report Showcase Section - REVAMPED */}
+          <section id="premium-report" className="py-20 md:py-32 relative overflow-hidden bg-[#0d000d] scroll-mt-20">
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div className="absolute top-[10%] left-[-5%] w-[50%] h-[50%] bg-secondary/15 rounded-full blur-[140px] opacity-40 animate-pulse" />
+              <div className="absolute bottom-[10%] right-[-5%] w-[40%] h-[40%] bg-red-900/20 rounded-full blur-[120px] opacity-30 animate-pulse delay-1000" />
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+              <div className="text-center mb-20">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-[0.4em] mb-8">
+                  The Full Access Experience
                 </div>
-                <div className="mt-8">
-                  <a className="inline-flex items-center text-secondary font-bold hover:underline" href="#how-it-works">
-                    Learn how it works <span className="material-icons-round ml-1">arrow_forward</span>
+                <h2 className="text-4xl md:text-7xl font-sans font-black mb-8 text-white tracking-tight leading-[0.9]">
+                  What's Inside Your <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary via-red-500 to-secondary italic">Premium Report?</span>
+                </h2>
+                <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl leading-relaxed font-medium">
+                  We don't just give you numbers. We give you a <span className="text-white">strategic life-guide</span> designed to help you navigate every challenge with divine clarity.
+                </p>
+              </div>
+
+              <div className="space-y-24">
+
+                {/* Sub-section: Premium Insights */}
+                <div className="relative">
+                  <div className="flex items-center gap-4 mb-12">
+                    <div className="h-px bg-gradient-to-r from-transparent to-[#D100D1]/40 flex-grow" />
+                    <h3 className="text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-widest text-center">
+                      Premium <span className="text-[#D100D1]">Insights</span>
+                    </h3>
+                    <div className="h-px bg-gradient-to-l from-transparent to-[#D100D1]/40 flex-grow" />
+                  </div>
+
+                  <div className="max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {[
+                        {
+                          title: "One habit blocking your growth",
+                          benefit: "Discover the specific subconscious pattern that acts as an 'anchor' preventing your natural career and personal expansion."
+                        },
+                        {
+                          title: "Inner conflict you face quietly",
+                          benefit: "Identify the hidden dissonance between your desires and actions, and learn precisely how to harmonize your internal state."
+                        },
+                        {
+                          title: "Why you feel misunderstood",
+                          benefit: "Understand the 'Vibrational Gap' between how you perceive yourself and how the world sees you, to improve every connection."
+                        },
+                        {
+                          title: "Decision-making patterns",
+                          benefit: "Map your unique logic cycle to identify where you've compromised in the past and how to make 'Life-Correcting' choices."
+                        },
+                        {
+                          title: "What drains your energy faster",
+                          benefit: "Uncover specific environments and personality types that clash with your frequency, and learn how to shield your aura."
+                        },
+                        {
+                          title: "Practical remedies for balance",
+                          benefit: "Receive actionable, daily micro-rituals designed to recalibrate your energy and attract favorable 'synchronicity' events."
+                        }
+                      ].map((insight, i) => (
+                        <div key={i} className="group relative p-6 rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full">
+                          <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+
+                          <div className="relative z-10 flex flex-col h-full">
+                            <div className="mb-4 flex items-center justify-between">
+                              <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                                <Lock className="h-4 w-4" />
+                              </div>
+                              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">Insight {i + 1}</span>
+                            </div>
+
+                            <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">
+                              {insight.title}
+                            </h4>
+
+                            <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium">
+                              {insight.benefit}
+                            </p>
+
+                            <div className="pt-4 border-t border-white/5 mt-auto">
+                              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black hover:shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all duration-300 cursor-pointer group/unlock">
+                                <Crown className="h-3 w-3 group-hover:rotate-12 transition-transform" />
+                                <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock to Read</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sub-section: Included in Full Report */}
+                <div className="relative">
+                  <div className="flex items-center gap-4 mb-12">
+                    <div className="h-px bg-gradient-to-r from-transparent to-[#D100D1]/40 flex-grow" />
+                    <h3 className="text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-widest text-center">
+                      Included in <span className="text-[#D100D1]">Full Report</span>
+                    </h3>
+                    <div className="h-px bg-gradient-to-l from-transparent to-[#D100D1]/40 flex-grow" />
+                  </div>
+
+                  <div className="max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {[
+                        { title: "Your Personal Growth Guidance", icon: Compass, label: "Core Path", benefit: "A comprehensive 15+ page breakdown of your life purpose, hidden hurdles, and the master plan for your spiritual and material evolution." },
+                        { title: "Do This, Avoid This (Guidance)", icon: Lightbulb, label: "Daily Strategy", benefit: "Specific, actionable list of behaviors to embrace and patterns to avoid based on your current numeric phase and planetary influences." },
+                        { title: "Work Style & Career Environment", icon: Briefcase, label: "Career Map", benefit: "Discover the specific professional settings where you will naturally excel and the industries that best align with your 'Success Frequency'." },
+                        { title: "Emotional Pattern Decoder", icon: Fingerprint, label: "Soul Logic", benefit: "Deep analysis of why you react emotionally the way you do, helping you gain mastery over your reactions and find lasting inner calm." },
+                        { title: "Decision-Making Guide", icon: Scale, label: "Success Logic", benefit: "A tactical manual on how to choose your battles, when to hit the accelerator, and when to step back for maximum strategic advantage." },
+                        { title: "Relationship Communication Style", icon: HeartHandshake, label: "Bond Synergy", benefit: "Decode how you naturally connect with others and learn the secret to resolving friction in your most important personal and professional bonds." }
+                      ].map((item, i) => (
+                        <div key={i} className="group relative p-6 rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full">
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+
+                          <div className="relative z-10 flex flex-col h-full">
+                            <div className="mb-4 flex items-center justify-between">
+                              <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                                <item.icon className="h-5 w-5" />
+                              </div>
+                              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">{item.label}</span>
+                            </div>
+
+                            <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">
+                              {item.title}
+                            </h4>
+
+                            <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium">
+                              {item.benefit}
+                            </p>
+
+                            <div className="pt-4 border-t border-white/5 mt-auto">
+                              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black hover:shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all duration-300 cursor-pointer group/unlock">
+                                <Lock className="h-3 w-3" />
+                                <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock to Read</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sub-section: Color Alchemy & Guidance */}
+                <div className="relative">
+                  <div className="flex items-center gap-4 mb-12">
+                    <div className="h-px bg-gradient-to-r from-transparent to-[#D100D1]/40 flex-grow" />
+                    <h3 className="text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-widest text-center">
+                      Color <span className="text-[#D100D1]">Alchemy</span> & Guidance
+                    </h3>
+                    <div className="h-px bg-gradient-to-l from-transparent to-[#D100D1]/40 flex-grow" />
+                  </div>
+
+                  <div className="max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {[
+                        { title: "Your Power Success Color", icon: Palette, label: "Aura Boost", benefit: "Identify the specific wavelength that amplifies your natural charisma and luck, making you more persuasive in important meetings and social events." },
+                        { title: "Energy-Draining Colors to Avoid", icon: Zap, label: "Protection", benefit: "Discover which colors create a 'Vibrational Leak' in your aura, causing unnecessary fatigue and slowing your progress during critical moments." },
+                        { title: "Daily Attire Vibration Tuning", icon: Star, label: "Magnetic", benefit: "Learn the secret of using colors as 'frequency controllers' to stay grounded, protected, and highly magnetic regardless of the environment." }
+                      ].map((item, i) => (
+                        <div key={i} className="group relative p-6 rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full">
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+
+                          <div className="relative z-10 flex flex-col h-full">
+                            <div className="mb-4 flex items-center justify-between">
+                              <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                                <item.icon className="h-5 w-5" />
+                              </div>
+                              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">{item.label}</span>
+                            </div>
+
+                            <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">
+                              {item.title}
+                            </h4>
+
+                            <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium">
+                              {item.benefit}
+                            </p>
+
+                            <div className="pt-4 border-t border-white/5 mt-auto">
+                              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black hover:shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all duration-300 cursor-pointer group/unlock">
+                                <Lock className="h-3 w-3" />
+                                <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock to Read</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sub-section: Cosmic Number Alignment */}
+                <div className="relative">
+                  <div className="flex items-center gap-4 mb-12">
+                    <div className="h-px bg-gradient-to-r from-transparent to-[#D100D1]/40 flex-grow" />
+                    <h3 className="text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-widest text-center">
+                      Cosmic Number <span className="text-[#D100D1]">Alignment</span>
+                    </h3>
+                    <div className="h-px bg-gradient-to-l from-transparent to-[#D100D1]/40 flex-grow" />
+                  </div>
+
+                  <div className="max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {[
+                        { title: "Psychic & Life Path Synergy", icon: Orbit, label: "Deep Sync", benefit: "Understand how your basic instincts and your higher destiny numbers interact, revealing the 'Master Frequency' that should guide your biggest life decisions." },
+                        { title: "Name & Date of Birth Balancing", icon: Hash, label: "Identity", benefit: "Discover if your legal name is in harmony with your birth date, and receive specific corrections to ensure your social presence matches your soul's blueprint." },
+                        { title: "Destiny Number Implementation", icon: Fingerprint, label: "Action", benefit: "A tactical guide on how to 'embody' your destiny number daily, turning theoretical knowledge into a powerful magnet for real-world opportunities." }
+                      ].map((item, i) => (
+                        <div key={i} className="group relative p-6 rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full">
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+
+                          <div className="relative z-10 flex flex-col h-full">
+                            <div className="mb-4 flex items-center justify-between">
+                              <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                                <item.icon className="h-5 w-5" />
+                              </div>
+                              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">{item.label}</span>
+                            </div>
+
+                            <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">
+                              {item.title}
+                            </h4>
+
+                            <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium">
+                              {item.benefit}
+                            </p>
+
+                            <div className="pt-4 border-t border-white/5 mt-auto">
+                              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black hover:shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all duration-300 cursor-pointer group/unlock">
+                                <Lock className="h-3 w-3" />
+                                <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock to Read</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sub-section: The Cosmic Remedies Library */}
+                <div className="relative">
+                  <div className="flex items-center gap-4 mb-12">
+                    <div className="h-px bg-gradient-to-r from-transparent to-[#D100D1]/40 flex-grow" />
+                    <h3 className="text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-widest text-center">
+                      The Cosmic <span className="text-[#D100D1]">Remedies</span> Library
+                    </h3>
+                    <div className="h-px bg-gradient-to-l from-transparent to-[#D100D1]/40 flex-grow" />
+                  </div>
+
+                  <div className="max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {[
+                        { title: "Personalized Mantras & Daily Japa", icon: Zap, label: "Vibration", benefit: "Receive custom Sanskrit or phonetic seed sounds tailored to your active life-path number, designed to clean your mental slate daily." },
+                        { title: "Sacred Habits & Morning Rituals", icon: Sparkles, label: "Routine", benefit: "Specific morning sequences—from the direction you face to the order of tasks—that align your physical body with the day's cosmic vibe." },
+                        { title: "Gemstone & Crystal Guide", icon: Gem, label: "Frequency", benefit: "Identify the earth-frequencies (stones) that act as permanent vibrational anchors for your energy, providing protection and focus." },
+                        { title: "Affirmation Shielding Techniques", icon: Shield, label: "Protection", benefit: "Learn to build a 'Mental Shield' using specific linguistic commands that repel negative external influences and self-doubt." },
+                        { title: "Sound Healing & Frequencies", icon: Music, label: "Audio Meta", benefit: "Discover the exact Hertz frequencies (Binaural beats/Solfeggio) that resonate with your numeric signature for deep meditation." },
+                        { title: "Space Clearing Divine Guidance", icon: Moon, label: "Zen Space", benefit: "How to arrange your immediate living or work environment to ensure energy flows freely according to your primary numeric destiny." }
+                      ].map((item, i) => (
+                        <div key={i} className="group relative p-6 rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full">
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+
+                          <div className="relative z-10 flex flex-col h-full">
+                            <div className="mb-4 flex items-center justify-between">
+                              <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                                <item.icon className="h-5 w-5" />
+                              </div>
+                              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">{item.label}</span>
+                            </div>
+
+                            <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">
+                              {item.title}
+                            </h4>
+
+                            <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium">
+                              {item.benefit}
+                            </p>
+
+                            <div className="pt-4 border-t border-white/5 mt-auto">
+                              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black hover:shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all duration-300 cursor-pointer group/unlock">
+                                <Lock className="h-3 w-3" />
+                                <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock to Read</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-24 text-center">
+                  <button
+                    onClick={() => {
+                      const datePicker = document.querySelector('[name="dob"]') as HTMLInputElement;
+                      if (datePicker) {
+                        datePicker.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => datePicker.focus(), 500);
+                      }
+                    }}
+                    className="group relative inline-flex items-center gap-4 px-10 py-5 rounded-full bg-gradient-to-r from-secondary to-red-600 text-black font-black text-sm md:text-base uppercase tracking-widest overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-[0_20px_50px_rgba(234,179,8,0.4)]"
+                  >
+                    <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity" />
+                    <Crown className="h-6 w-6" />
+                    <span>Get My Premium Report Now</span>
+                  </button>
+                  <div className="mt-8 flex flex-col md:flex-row items-center justify-center gap-6 text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                    <span className="flex items-center gap-2"><Lock className="h-3 w-3" /> Secure Payment</span>
+                    <span className="flex items-center gap-2"><Crown className="h-3 w-3" /> Lifetime Access</span>
+                    <span className="hidden md:block h-1 w-1 bg-slate-700 rounded-full" />
+                    <span className="text-white">One-Time Payment: ₹49 Only</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* What is Numerology Section - SEO Optimized with Premium Layout */}
+          <section id="what-is-numerology" className="relative overflow-hidden bg-[#0d000d] border-y border-white/5 scroll-mt-20">
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[40%] h-[60%] bg-red-900/5 rounded-full blur-[120px]" />
+            </div>
+
+            <div className="relative max-w-7xl mx-auto flex flex-col md:flex-row items-stretch">
+              {/* Left Side: Tall Premium Image */}
+              <div className="w-full md:w-[45%] lg:w-[40%] relative min-h-[400px] md:min-h-[650px] overflow-hidden">
+                <img
+                  alt="Ancient stone tablet with golden numerology symbols, sacred geometry Metatron's cube, and mystical numbers representing the foundations of numerological science."
+                  className="absolute inset-0 w-full h-full object-cover object-center grayscale-[0.2] contrast-[1.1] hover:scale-105 transition-transform duration-[2000ms]"
+                  src="/images/what is num.jpg"
+                />
+                <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[#0d000d] to-transparent hidden md:block" />
+                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0d000d] to-transparent md:hidden" />
+              </div>
+
+              {/* Right Side: Content */}
+              <div className="flex-1 p-8 md:p-16 lg:p-20 flex flex-col justify-center relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-[0.3em] mb-6 w-fit">
+                  Ancient Science
+                </div>
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-sans font-black mb-8 text-white tracking-tight leading-tight">
+                  What is <span className="text-secondary italic">Numerology?</span>
+                </h2>
+
+                <div className="space-y-6 text-slate-300 text-base md:text-lg leading-relaxed">
+                  <p>
+                    Numerology is the ancient art and science of decoding the hidden language of numbers that governs your life. For over 2,500 years, mystics, philosophers, and scientists have used <strong className="text-secondary" >numerology</strong> to unlock the blueprint of human destiny.
+                  </p>
+                  <p>
+                    Unlike astrology, which looks to the stars, numerology finds meaning in the numbers embedded in your <strong>birth date</strong> and <strong>name</strong>. Every letter carries a vibrational frequency, and when combined, they reveal your <em className="text-white">life path number</em>, personality traits, and even future opportunities.
+                  </p>
+                  <p>
+                    We use the time-tested <strong className="text-secondary">Pythagorean system</strong>—the same mathematical framework that ancient Greek philosophers relied on to understand the cosmos. By converting your name into numbers, we map your soul's <em className="italic text-white">energetic signature</em>.
+                  </p>
+
+                  <div className="mt-10 p-6 rounded-2xl bg-white/[0.03] border border-white/5 relative group overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="relative z-10 flex gap-4">
+                      <div className="text-3xl">💡</div>
+                      <div>
+                        <p className="text-sm md:text-base">
+                          <strong className="text-white block mb-1">The Digital DNA of Soul</strong>
+                          Just as DNA encodes your biological instructions, numbers encode your spiritual blueprint. Numerology is the key to reading that code and aligning with your natural frequency.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-10">
+                  <a
+                    className="group inline-flex items-center gap-2 text-secondary font-black text-sm uppercase tracking-widest hover:text-white transition-colors"
+                    href="#how-it-works"
+                  >
+                    <span>Learn the methodology</span>
+                    <div className="w-8 h-px bg-secondary group-hover:w-12 group-hover:bg-white transition-all" />
                   </a>
                 </div>
               </div>
             </div>
           </section>
 
-          <section className="py-20 bg-card" id="how-it-works">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">How It Works</h2>
-                <p className="text-muted-foreground">Your journey to self-discovery in three simple steps.</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center relative">
-                <div className="hidden md:block absolute top-12 left-1/6 right-1/6 h-0.5 bg-border z-0" />
-
-                <div className="relative z-10">
-                  <div className="w-24 h-24 mx-auto rounded-full bg-background border-4 border-border flex items-center justify-center mb-6 shadow-md">
-                    <span className="material-icons-round text-4xl text-secondary">edit_note</span>
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">1. Enter Details</h3>
-                  <p className="text-muted-foreground text-sm px-4">
-                    Provide your full birth name and date of birth. Our system ensures your data remains private.
-                  </p>
-                </div>
-
-                <div className="relative z-10">
-                  <div className="w-24 h-24 mx-auto rounded-full bg-background border-4 border-border flex items-center justify-center mb-6 shadow-md">
-                    <span className="material-icons-round text-4xl text-secondary">calculate</span>
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">2. Calculation</h3>
-                  <p className="text-muted-foreground text-sm px-4">
-                    Our algorithm applies Pythagorean numerology principles to calculate your core numbers instantly.
-                  </p>
-                </div>
-
-                <div className="relative z-10">
-                  <div className="w-24 h-24 mx-auto rounded-full bg-background border-4 border-border flex items-center justify-center mb-6 shadow-md">
-                    <span className="material-icons-round text-4xl text-secondary">auto_stories</span>
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">3. Reveal Insight</h3>
-                  <p className="text-muted-foreground text-sm px-4">
-                    Unlock your detailed report containing personality traits, lucky factors, and life guidance.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="py-20 bg-muted" id="testimonials">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">What Our Users Say</h2>
-                <div className="flex justify-center items-center gap-2 mb-2">
-                  <div className="flex text-secondary">
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star_half</span>
-                  </div>
-                  <span className="text-muted-foreground font-medium">4.8/5 Average Rating</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="bg-card p-8 rounded-xl shadow-sm border border-border">
-                  <div className="flex text-secondary mb-4 text-sm">
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star</span>
-                  </div>
-                  <p className="text-muted-foreground italic mb-6">
-                    "I was skeptical at first, but the Life Path description was scary accurate. It really helped me understand why I react to things the way I do."
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-sm">SP</div>
-                    <div>
-                      <div className="font-bold text-sm">Sarah P.</div>
-                      <div className="text-xs text-muted-foreground">Verified User</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-card p-8 rounded-xl shadow-sm border border-border">
-                  <div className="flex text-secondary mb-4 text-sm">
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star</span>
-                  </div>
-                  <p className="text-muted-foreground italic mb-6">
-                    "The lucky colors section is my favorite. I started wearing more blue as suggested and I genuinely feel more confident at work."
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-200 dark:bg-blue-700 flex items-center justify-center text-blue-800 dark:text-white font-bold text-sm">RK</div>
-                    <div>
-                      <div className="font-bold text-sm">Rahul K.</div>
-                      <div className="text-xs text-muted-foreground">Verified User</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-card p-8 rounded-xl shadow-sm border border-border">
-                  <div className="flex text-secondary mb-4 text-sm">
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round">star</span>
-                    <span className="material-icons-round text-muted-foreground">star</span>
-                  </div>
-                  <p className="text-muted-foreground italic mb-6">
-                    "Fast, simple, and very insightful. For the price of a coffee, the report offers incredible value. Highly recommended."
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-green-200 dark:bg-green-700 flex items-center justify-center text-green-800 dark:text-white font-bold text-sm">MJ</div>
-                    <div>
-                      <div className="font-bold text-sm">Michael J.</div>
-                      <div className="text-xs text-muted-foreground">Verified User</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="py-20 relative overflow-hidden">
-            <div className="absolute inset-0 gradient-mystic z-0" />
-            <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
-              <h2 className="text-3xl md:text-5xl font-bold text-primary-foreground mb-6">Ready to uncover your destiny?</h2>
-              <p className="text-primary-foreground/80 text-lg mb-8">
-                Get your personalized numerology report instantly. No account creation required for initial check.
-              </p>
-              <button
-                className="py-4 px-10 rounded-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold text-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300"
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                type="button"
+          <section className="py-24 relative overflow-hidden scroll-mt-20" id="how-it-works">
+            {/* Background Video & Black Overlay */}
+            <div className="absolute inset-0 z-0">
+              <video
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full h-full object-cover"
               >
-                Get Started Now
-              </button>
-              <p className="mt-4 text-sm text-primary-foreground/70">100% Satisfaction Guarantee</p>
+                <source src="/vidoes/gradient 1.mp4" type="video/mp4" />
+              </video>
+              <div className="absolute inset-0 bg-black/60" />
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+              <div className="text-center mb-20">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-[0.3em] mb-6">
+                  The Journey
+                </div>
+                <h2 className="text-4xl md:text-6xl font-sans font-black mb-6 text-white tracking-tight">
+                  How It <span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-yellow-400">Works</span>
+                </h2>
+                <p className="text-slate-400 max-w-2xl mx-auto text-lg leading-relaxed font-medium">
+                  Your path from curiosity to clarity takes only <span className="text-white">three simple steps</span>.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+                {/* Connecting Line (Desktop) */}
+                <div className="hidden md:block absolute top-[20%] left-[20%] right-[20%] h-px bg-gradient-to-r from-transparent via-secondary/20 to-transparent z-0" />
+
+                {[
+                  {
+                    step: "01",
+                    title: "Soul DNA Input",
+                    desc: "Provide your birth name and date. Our system treats your data as sacred and 100% private.",
+                    icon: Fingerprint,
+                    benefit: "Instant Identity Sync"
+                  },
+                  {
+                    step: "02",
+                    title: "Frequency Mapping",
+                    desc: "We apply Pythagorean principles to map your unique vibrational code across the cosmos.",
+                    icon: Activity,
+                    benefit: "Precision Calculation"
+                  },
+                  {
+                    step: "03",
+                    title: "Destiny Reveal",
+                    desc: "Unlock your full 20+ page blueprint and start aligning with your true purpose today.",
+                    icon: Crown,
+                    benefit: "Future Clarity"
+                  }
+                ].map((item, i) => (
+                  <div key={i} className="group relative z-10">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="relative mb-8">
+                        <div className="w-24 h-24 rounded-full bg-black/40 border border-secondary/30 flex items-center justify-center group-hover:border-secondary group-hover:shadow-[0_0_30px_rgba(234,179,8,0.3)] transition-all duration-500 relative overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <item.icon className="h-10 w-10 text-secondary group-hover:scale-110 transition-transform duration-500" />
+                        </div>
+                        <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-[#0d000d] border border-secondary/40 flex items-center justify-center text-secondary text-[10px] font-black group-hover:bg-secondary group-hover:text-black transition-all">
+                          {item.step}
+                        </div>
+                      </div>
+
+                      <h3 className="text-2xl font-sans font-black text-white mb-3 tracking-tight">
+                        {item.title}
+                      </h3>
+                      <p className="text-slate-400 text-base leading-relaxed mb-6 px-4 font-medium">
+                        {item.desc}
+                      </p>
+
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/40 text-[9px] font-black uppercase tracking-widest group-hover:border-secondary/40 group-hover:text-secondary transition-all">
+                        <div className="w-1 h-1 rounded-full bg-secondary animate-pulse" />
+                        {item.benefit}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="py-24 relative overflow-hidden bg-[#0d000d] scroll-mt-20" id="testimonials">
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-secondary/5 rounded-full blur-[160px]" />
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+              <div className="text-center mb-20">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-[0.3em] mb-6">
+                  Community Feedback
+                </div>
+                <h2 className="text-4xl md:text-5xl font-sans font-black mb-6 text-white tracking-tight">
+                  What Our <span className="text-secondary italic">Users Say</span>
+                </h2>
+                <div className="flex justify-center items-center gap-4">
+                  <div className="flex text-secondary drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]">
+                    {[...Array(4)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-current" />
+                    ))}
+                    <StarHalf className="h-5 w-5 fill-current" />
+                  </div>
+                  <span className="text-slate-400 font-black tracking-widest text-sm uppercase text-white/90">4.8 out of 5 Overall Rating</span>
+                </div>
+              </div>
+
+              <Carousel
+                setApi={setApi}
+                opts={{
+                  align: "start",
+                  loop: true,
+                }}
+                className="w-full"
+              >
+                <CarouselContent className="py-8">
+                  {[
+                    {
+                      name: "Priya Sharma",
+                      location: "Mumbai, Maharashtra",
+                      text: "The detailed premium report helped me understand my life path completely. I discovered my lucky numbers, favorable colors, and the best remedies for my problems. The future predictions were spot-on!",
+                      avatar: "PS"
+                    },
+                    {
+                      name: "Rajesh Kumar",
+                      location: "Delhi",
+                      text: "The premium report exceeded my expectations! I learned about my good and bad numbers which helped me make better choices. The remedies section was very practical and easy to follow. Best investment!",
+                      avatar: "RK"
+                    },
+                    {
+                      name: "Sneha Patel",
+                      location: "Ahmedabad, Gujarat",
+                      text: "I was confused about my career path but NumGuru's premium report gave me complete clarity. I now know my lucky colors and numbers which I use in my daily life. The guidance section was incredibly helpful!",
+                      avatar: "SP"
+                    },
+                    {
+                      name: "Amit Verma",
+                      location: "Pune, Maharashtra",
+                      text: "Amazing premium report! I got detailed insights about my personality based on my date of birth. The remedies suggested have brought positive changes in my life. I learned how to align my vibrations for success.",
+                      avatar: "AV"
+                    },
+                    {
+                      name: "Kavita Reddy",
+                      location: "Hyderabad, Telangana",
+                      text: "NumGuru's premium report helped me overcome my financial struggles. The report showed me my lucky colors and numbers which I applied in my business. The future predictions gave me hope and clarity.",
+                      avatar: "KR"
+                    },
+                    {
+                      name: "Vikram Singh",
+                      location: "Jaipur, Rajasthan",
+                      text: "I checked my premium report and it was a game-changer! I discovered my bad numbers to avoid and good numbers to embrace. The growth strategies mentioned in the report are working wonderfully for me!",
+                      avatar: "VS"
+                    },
+                    {
+                      name: "Meera Iyer",
+                      location: "Bangalore, Karnataka",
+                      text: "The premium numerology report gave me complete guidance about my life journey. The lucky colors recommendation has brought positive energy into my home. Worth every rupee!",
+                      avatar: "MI"
+                    },
+                    {
+                      name: "Sanjay Gupta",
+                      location: "Lucknow, Uttar Pradesh",
+                      text: "I was skeptical but the premium report proved me wrong! Based on my name and DOB, I received accurate predictions about my future. The remedies section solved many of my personal problems.",
+                      avatar: "SG"
+                    },
+                    {
+                      name: "Anjali Desai",
+                      location: "Surat, Gujarat",
+                      text: "NumGuru's premium report helped me find direction in life. I discovered my good and bad numbers which explained so many past events. The growth guidance showed me how to improve my career.",
+                      avatar: "AD"
+                    },
+                    {
+                      name: "Rahul Joshi",
+                      location: "Indore, Madhya Pradesh",
+                      text: "Best decision to get the premium report! I learned everything about my numerology - from lucky numbers to favorable colors. The remedies are simple and practical. I now plan my investments wisely!",
+                      avatar: "RJ"
+                    },
+                    {
+                      name: "Deepika Nair",
+                      location: "Kochi, Kerala",
+                      text: "The premium report from NumGuru gave me clarity about my life purpose. I found out my lucky colors and numbers which have brought amazing opportunities. The future guidance prepared me for challenges.",
+                      avatar: "DN"
+                    },
+                    {
+                      name: "Manish Agarwal",
+                      location: "Kolkata, West Bengal",
+                      text: "I checked my premium report and it answered all my questions! I learned about my good numbers for business and bad numbers to avoid. The growth tips are practical and really working!",
+                      avatar: "MA"
+                    }
+                  ].map((item, i) => (
+                    <CarouselItem key={i} className="md:basis-1/3 sm:basis-1/2 basis-full px-2">
+                      <div className="group relative p-6 rounded-2xl bg-[#2a002a]/40 backdrop-blur-md border border-white/10 transition-all duration-500 hover:-translate-y-2 hover:border-secondary/40 hover:shadow-[0_20px_40px_rgba(234,179,8,0.05)] flex flex-col h-full">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+
+                        <div className="relative z-10 flex flex-col h-full">
+                          <div className="flex text-secondary mb-4 drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">
+                            {[...Array(5)].map((_, starI) => (
+                              <Star key={starI} className="h-3 w-3 fill-current" />
+                            ))}
+                          </div>
+
+                          <p className="text-slate-300 italic mb-8 leading-relaxed font-medium text-xs flex-grow">
+                            "{item.text}"
+                          </p>
+
+                          <div className="flex items-center gap-4 pt-4 border-t border-white/5 mt-auto">
+                            <div className="w-10 h-10 rounded-full bg-secondary/10 border border-secondary/20 flex items-center justify-center font-black text-secondary text-xs shadow-[0_0_10px_rgba(234,179,8,0.1)]">
+                              {item.avatar}
+                            </div>
+                            <div className="text-left">
+                              <div className="font-sans font-black text-white text-xs tracking-tight leading-tight">{item.name}</div>
+                              <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">{item.location}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <div className="hidden md:block">
+                  <CarouselPrevious className="absolute -left-6 top-1/2 -translate-y-1/2 bg-secondary/10 border-secondary/20 text-secondary hover:bg-secondary hover:text-black transition-all" />
+                  <CarouselNext className="absolute -right-6 top-1/2 -translate-y-1/2 bg-secondary/10 border-secondary/20 text-secondary hover:bg-secondary hover:text-black transition-all" />
+                </div>
+              </Carousel>
+
+
+            </div>
+          </section>
+
+          <section className="py-24 relative overflow-hidden bg-[#0d000d]">
+            {/* Background Video & Black Overlay */}
+            <div className="absolute inset-0 z-0">
+              <video
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full h-full object-cover"
+              >
+                <source src="/vidoes/gradient 3.mp4" type="video/mp4" />
+              </video>
+              <div className="absolute inset-0 bg-black/60" />
+            </div>
+
+            <div className="absolute inset-0 pointer-events-none z-0">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-secondary/5 rounded-full blur-[160px]" />
+            </div>
+
+            <div className="relative z-10 max-w-5xl mx-auto px-4 text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[12px] font-black uppercase tracking-[0.4em] mb-10 animate-pulse">
+                The Final Revelation
+              </div>
+
+              <h2 className="text-4xl md:text-7xl font-sans font-black text-white mb-8 tracking-tighter leading-none shadow-secondary/10">
+                Ready to Uncover Your <br />
+                <span className="text-secondary italic">Divine Destiny?</span>
+              </h2>
+
+              <p className="text-slate-300 text-lg md:text-xl mb-12 max-w-3xl mx-auto font-medium leading-relaxed">
+                Join over <span className="text-white font-black">50,000+ seekers</span> who have decoded their cosmic frequency.
+                Your personalized master report is waiting to reveal your path to success, health, and harmony.
+              </p>
+
+              <div className="flex flex-col items-center gap-8">
+                <button
+                  className="group relative py-6 px-16 rounded-full bg-secondary hover:scale-105 transition-all duration-500 shadow-[0_20px_40px_rgba(234,179,8,0.2)] hover:shadow-[0_0_50px_rgba(234,179,8,0.4)] overflow-hidden"
+                  onClick={scrollToTop}
+                  type="button"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/40 to-white/0 -translate-x-full group-hover:animate-shimmer" />
+                  <span className="relative z-10 text-black font-black text-2xl tracking-tight flex items-center gap-3">
+                    Get Your Premium Report Now
+                    <ChevronRight className="w-6 h-6 transition-transform group-hover:translate-x-2" />
+                  </span>
+                </button>
+
+                <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-4">
+                  {[
+                    { icon: Lock, text: "100% Privacy Secured" },
+                    { icon: Zap, text: "Instant Digital Access" },
+                    { icon: Star, text: "Expert Numerology Logic" }
+                  ].map((marker, idx) => (
+                    <div key={idx} className="flex items-center gap-3">
+                      <marker.icon className="w-5 h-5 text-secondary" />
+                      <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">{marker.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </section>
         </main>
 
-        <footer className="bg-card border-t border-border py-12">
+        <footer className="bg-[#0d000d] border-t border-white/5 py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div className="col-span-1 md:col-span-2">
@@ -1170,13 +1803,13 @@ const Index = () => {
                     </a>
                   </li>
                   <li>
-                    <a className="hover:text-secondary transition-colors" href="#how-it-works">
-                      How it Works
+                    <a className="hover:text-secondary transition-colors" href="#what-is-numerology">
+                      What is Numerology?
                     </a>
                   </li>
                   <li>
-                    <a className="hover:text-secondary transition-colors" href="#samples">
-                      Sample Report
+                    <a className="hover:text-secondary transition-colors" href="#premium-report">
+                      Premium Report
                     </a>
                   </li>
                   <li>

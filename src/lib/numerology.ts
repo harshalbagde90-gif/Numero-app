@@ -1363,7 +1363,7 @@ export function generateFreeReportFromDob(dob: Date): FreeNumerologyReport {
     })),
     premiumModules: [
       {
-        title: "Your Personal Growth Blueprint",
+        title: "Your Personal Growth Guidance",
         description: "A comprehensive analysis of your evolutionary path, detailing exactly how your energy expands through specific life challenges.",
         icon: "spellcheck"
       },

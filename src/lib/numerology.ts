@@ -1286,6 +1286,7 @@ export interface FreeNumerologyReport {
     description: string;
   };
   remedies: { habit: string; color: string; bestDay: string; quickTip: string; details: string[] };
+  cosmicFrequency: { mantra: string; instruction: string };
 }
 
 function formatDobDDMMYYYY(dob: Date): string {
@@ -1406,7 +1407,8 @@ export function generateFreeReportFromDob(dob: Date): FreeNumerologyReport {
     remedies: (function () {
       const key = lp > 9 ? String(reduceToSingleDigit(lp)) : String(lp);
       return remediesData[key] || remediesData["1"];
-    })()
+    })(),
+    cosmicFrequency: cosmicFrequencyPool[lp] || cosmicFrequencyPool[lp > 9 ? reduceToSingleDigit(lp) : lp] || cosmicFrequencyPool[9]
   };
 }
 

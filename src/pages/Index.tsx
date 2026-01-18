@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { ResultPreview } from "@/components/ResultPreview";
 import { generateReading, NumerologyReading } from "@/lib/numerology";
 import { useRazorpay } from "@/hooks/useRazorpay";
 import { useToast } from "@/hooks/use-toast";
+import LanguageTranslator from "@/components/LanguageTranslator";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -14,6 +17,7 @@ import {
   Crown,
   Fingerprint,
   Gem,
+  Gift,
   Hash,
   HeartHandshake,
   Lightbulb,
@@ -29,8 +33,11 @@ import {
   StarHalf,
   VenetianMask,
   Zap,
-  ChevronRight, // Added
-  Unlock, // Added
+  ChevronRight,
+  Unlock,
+  Menu,
+  X,
+  BookOpen,
 } from "lucide-react";
 import {
   Carousel,
@@ -50,13 +57,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { generateFreeReportFromDob, FreeNumerologyReport } from "@/lib/numerology";
+import { Footer } from "@/components/Footer";
 
 type AppState = "landing" | "preview";
 
-const PRICE = 49; // INR
-
 const Index = () => {
+  const { symbol, amount, originalAmount, currency } = useCurrency();
   const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+  const [count, setCount] = useState(0);
 
   const scrollToTop = () => {
     const topElement = document.getElementById("top");
@@ -70,42 +79,24 @@ const Index = () => {
   useEffect(() => {
     if (!api) return;
 
+    setCount(api.scrollSnapList().length);
+    setCurrent(api.selectedScrollSnap());
+
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap());
+    });
+
     const intervalId = setInterval(() => {
       api.scrollNext();
     }, 4000);
 
     return () => clearInterval(intervalId);
   }, [api]);
-  const [state, setState] = useState<AppState>("landing");
-  const [reading, setReading] = useState<NumerologyReading | null>(null);
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [fullName, setFullName] = useState("");
-  const [fullDob, setFullDob] = useState<Date | undefined>(undefined);
-  const [sampleDob, setSampleDob] = useState<Date | undefined>(undefined);
-  const [isSampleDobOpen, setIsSampleDobOpen] = useState(false);
-  const [isFullDobOpen, setIsFullDobOpen] = useState(false);
-  const [isSampleResultOpen, setIsSampleResultOpen] = useState(false);
-  const [freeReport, setFreeReport] = useState<FreeNumerologyReport | null>(null);
+  // --- Synchronous Initial Data Extraction ---
+  const getInitialData = () => {
+    if (typeof window === "undefined") return { state: "landing" as AppState, reading: null, isUnlocked: false };
 
-  const { initiatePayment } = useRazorpay();
-  const { toast } = useToast();
-
-  const today = useMemo(() => new Date(), []);
-  const minDob = useMemo(() => new Date(1900, 0, 1), []);
-
-  const prefersDark = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
-  }, []);
-
-  useEffect(() => {
-    // Enforce Dark Mode Only
-    document.documentElement.classList.add("dark");
-  }, []);
-
-  // Session Persistence: Load from localStorage or URL Share Link
-  useEffect(() => {
+    // 1. Try URL parameters (highest priority)
     const params = new URLSearchParams(window.location.search);
     const v = params.get("v");
     const sharedData = params.get("data");
@@ -117,14 +108,12 @@ const Index = () => {
         let unlocked = false;
 
         if (v) {
-          // New Short Format: Name|Timestamp|Unlocked
           const decodedRaw = decodeURIComponent(atob(v));
           const [n, d, u] = decodedRaw.split("|");
           name = n;
           dob = new Date(parseInt(d));
           unlocked = u === "1";
         } else if (sharedData) {
-          // Fallback for old JSON format
           const decoded = JSON.parse(atob(sharedData));
           name = decoded.n;
           dob = new Date(decoded.d);
@@ -132,41 +121,78 @@ const Index = () => {
         }
 
         if (name && dob) {
-          const newReading = generateReading(name, dob);
-          setReading(newReading);
-          setIsUnlocked(unlocked);
-          setState("preview");
-
-          // Clean up URL to keep it pretty
-          window.history.replaceState({}, document.title, window.location.pathname);
-
-          toast({
-            title: "Cosmic Report Loaded! ✨",
-            description: `Welcome back, ${name}. Your unique vibration has been restored.`,
-          });
-          return;
+          return {
+            state: "preview" as AppState,
+            reading: generateReading(name, dob),
+            isUnlocked: unlocked,
+            isFromUrl: true
+          };
         }
       } catch (e) {
-        console.error("Failed to parse shared link data", e);
+        console.error("URL parse error", e);
       }
     }
 
-    const savedState = localStorage.getItem("numerology_session");
-    if (savedState) {
+    // 2. Try localStorage
+    const saved = localStorage.getItem("numerology_session");
+    if (saved) {
       try {
-        const { reading: savedReading, isUnlocked: savedIsUnlocked, state: savedAppState } = JSON.parse(savedState);
+        const { reading: savedReading, isUnlocked: savedIsUnlocked, state: savedAppState } = JSON.parse(saved);
         if (savedReading) {
-          // Convert string back to Date object
           savedReading.dob = new Date(savedReading.dob);
-          setReading(savedReading);
-          setIsUnlocked(savedIsUnlocked);
-          setState(savedAppState);
+          return {
+            state: (savedAppState as AppState) || "landing",
+            reading: savedReading,
+            isUnlocked: savedIsUnlocked || false
+          };
         }
       } catch (e) {
-        console.error("Failed to load saved session", e);
+        console.error("Storage parse error", e);
+      }
+    }
+
+    return { state: "landing" as AppState, reading: null, isUnlocked: false };
+  };
+
+  const initial = useMemo(() => getInitialData(), []);
+
+  const [state, setState] = useState<AppState>(initial.state);
+  const [reading, setReading] = useState<NumerologyReading | null>(initial.reading);
+  const [isUnlocked, setIsUnlocked] = useState(initial.isUnlocked);
+  const [isLoading, setIsLoading] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [fullDob, setFullDob] = useState<Date | undefined>(undefined);
+  const [sampleDob, setSampleDob] = useState<Date | undefined>(undefined);
+  const [isSampleDobOpen, setIsSampleDobOpen] = useState(false);
+  const [isFullDobOpen, setIsFullDobOpen] = useState(false);
+  const [isSampleResultOpen, setIsSampleResultOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [freeReport, setFreeReport] = useState<FreeNumerologyReport | null>(null);
+
+  const { initiatePayment } = useRazorpay();
+  const { toast } = useToast();
+
+  const today = useMemo(() => new Date(), []);
+  const minDob = useMemo(() => new Date(1900, 0, 1), []);
+
+  useEffect(() => {
+    // Enforce Dark Mode Only
+    document.documentElement.classList.add("dark");
+
+    // Handle URL cleanup and toast after synchronous load
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("v") || params.get("data")) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      if (reading) {
+        toast({
+          title: "Cosmic Report Loaded! ✨",
+          description: `Welcome back, ${reading.name}. Your unique vibration has been restored.`,
+        });
       }
     }
   }, []);
+
+
 
   // Session Persistence: Save to localStorage (Only if not in landing state)
   useEffect(() => {
@@ -246,7 +272,8 @@ const Index = () => {
     setIsLoading(true);
 
     initiatePayment(
-      PRICE,
+      amount,
+      currency,
       name,
       () => {
         setIsUnlocked(true);
@@ -599,7 +626,7 @@ const Index = () => {
                       <div className="flex items-center w-full gap-4">
                         <div className="h-px bg-gradient-to-r from-transparent via-secondary/40 to-secondary/60 flex-grow" />
                         <span className="text-lg sm:text-xl font-black uppercase tracking-[0.2em] text-gradient-gold drop-shadow-sm">
-                          The Cosmic Remedies Library
+                          The Sacred Remedies Library
                         </span>
                         <div className="h-px bg-gradient-to-l from-transparent via-secondary/40 to-secondary/60 flex-grow" />
                       </div>
@@ -610,66 +637,75 @@ const Index = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-6 pr-0">
-                      {[
-                        { num: 1, tag: "The Fearless Pioneer", line: "Master the art of focused leadership and original action." },
-                        { num: 2, tag: "The Intuitive Peacekeeper", line: "Harness the power of emotional harmony and sacred partnerships." },
-                        { num: 3, tag: "The Creative Manifestor", line: "Unlock the flow of creative expression and contagious joy." },
-                        { num: 4, tag: "The Divine Architect", line: "Build a foundation of absolute stability and mental strength." },
-                        { num: 5, tag: "The Dynamic Catalyst", line: "Balance wild freedom with intentional cosmic focus." },
-                        { num: 6, tag: "The Radiant Healer", line: "Protect your energy while nurturing the world with love." },
-                        { num: 7, tag: "The Mystic Seeker", line: "Decode the deep secrets of your inner wisdom and clarity." },
-                        { num: 8, tag: "The Abundance Master", line: "Step into your power of success and material alignment." },
-                        { num: 9, tag: "The Golden Humanitarian", line: "Align with the high frequency of universal compassion." }
-                      ].map((path) => (
-                        <div
-                          key={path.num}
-                          className={`relative group/path overflow-hidden rounded-2xl border transition-all duration-500 hover:-translate-y-1 ${Number(freeReport?.lifePath) === path.num ? 'border-secondary/50 bg-[#160f2e] shadow-[0_0_30px_rgba(234,179,8,0.1)]' : 'border-white/10 bg-[#120a24]'}`}
-                        >
-                          {Number(freeReport?.lifePath) === path.num && (
-                            <div className="absolute top-0 right-0 p-3">
-                              <div className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-2.5 py-1 rounded-full shadow-xl">
-                                <Star className="h-2.5 w-2.5 fill-current animate-pulse" />
-                                <span className="text-[8px] font-black uppercase tracking-tighter">Your Path</span>
-                              </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* 1. Daily Habit */}
+                      <div className="group relative overflow-hidden rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full p-6">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                        <div className="relative z-10 flex flex-col h-full">
+                          <div className="mb-4 flex items-center justify-between">
+                            <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                              <CalendarIcon className="h-5 w-5" />
                             </div>
-                          )}
-
-                          <div className="p-6">
-                            <div className="flex items-center gap-4 mb-4">
-                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-secondary/40 to-secondary/10 flex items-center justify-center text-secondary font-black text-xl border border-secondary/30 shadow-inner">
-                                {path.num}
-                              </div>
-                              <div className="text-left">
-                                <h4 className="text-[14px] font-black text-white uppercase tracking-widest flex items-center gap-2">
-                                  {path.tag}
-                                  <Fingerprint className="h-3 w-3 text-secondary/40 opacity-0 group-hover/path:opacity-100 transition-opacity" />
-                                </h4>
-                                <p className="text-[11px] text-white/50 leading-relaxed font-medium">{path.line}</p>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-3">
-                              {[1, 2, 3].map((r) => (
-                                <div key={r} className="relative py-4 px-2 rounded-xl bg-black/40 border border-white/5 flex flex-col items-center justify-center gap-2 group/remedy transition-all duration-300 hover:border-secondary/40 hover:bg-secondary/[0.02]">
-                                  <span className="text-[8px] font-bold text-white/40 uppercase tracking-widest transition-colors group-hover/remedy:text-secondary/60 text-center">Remedy {r}</span>
-                                  <div className="p-1.5 rounded-full bg-white/5 border border-white/10 group-hover/remedy:border-secondary/20 transition-all">
-                                    <Lock className="h-3 w-3 text-white/20 group-hover/remedy:text-secondary group-hover/remedy:animate-pulse" />
-                                  </div>
-
-                                  {/* Premium Hover Overlay - Enhanced */}
-                                  <div className="absolute inset-0 bg-[#0a0518]/80 backdrop-blur-[4px] opacity-0 group-hover/remedy:opacity-100 transition-all duration-300 flex flex-col items-center justify-center rounded-xl scale-95 group-hover/remedy:scale-100 border border-secondary/30">
-                                    <div className="p-2 rounded-full bg-secondary text-secondary-foreground mb-1.5 shadow-lg shadow-secondary/40">
-                                      <Lock className="h-3.5 w-3.5 fill-current" />
-                                    </div>
-                                    <span className="text-[7px] font-black text-secondary uppercase tracking-[0.25em]">Unlock</span>
-                                  </div>
-                                </div>
-                              ))}
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">Ritual Sync</span>
+                          </div>
+                          <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">Daily Habit</h4>
+                          <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium line-clamp-3">
+                            {freeReport?.remedies.habit} {freeReport?.remedies.quickTip}
+                          </p>
+                          <div className="pt-4 border-t border-white/5 mt-auto">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black transition-all duration-300 cursor-pointer">
+                              <Lock className="h-3 w-3" />
+                              <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock Full Ritual</span>
                             </div>
                           </div>
                         </div>
-                      ))}
+                      </div>
+
+                      {/* 2. Power Color */}
+                      <div className="group relative overflow-hidden rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full p-6">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                        <div className="relative z-10 flex flex-col h-full">
+                          <div className="mb-4 flex items-center justify-between">
+                            <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                              <Palette className="h-5 w-5" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">Auric Shield</span>
+                          </div>
+                          <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">Power Color</h4>
+                          <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium line-clamp-3">
+                            Wear {freeReport?.remedies.color} tones on {freeReport?.remedies.bestDay}s to amplify your energy field and manifest absolute success.
+                          </p>
+                          <div className="pt-4 border-t border-white/5 mt-auto">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black transition-all duration-300 cursor-pointer">
+                              <Lock className="h-3 w-3" />
+                              <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock Full Shield</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3. Cosmic Frequency */}
+                      <div className="group relative overflow-hidden rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full p-6">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                        <div className="relative z-10 flex flex-col h-full">
+                          <div className="mb-4 flex items-center justify-between">
+                            <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                              <Zap className="h-5 w-5" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">Soul Mantra</span>
+                          </div>
+                          <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">Cosmic Frequency</h4>
+                          <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium line-clamp-3">
+                            "{freeReport?.cosmicFrequency.mantra}" - {freeReport?.cosmicFrequency.instruction}
+                          </p>
+                          <div className="pt-4 border-t border-white/5 mt-auto">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black transition-all duration-300 cursor-pointer">
+                              <Lock className="h-3 w-3" />
+                              <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock Full Mantra</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="p-6 rounded-2xl bg-gradient-to-br from-secondary/20 via-secondary/5 to-transparent border border-secondary/30 text-center shadow-2xl relative overflow-hidden group">
@@ -718,7 +754,99 @@ const Index = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Mobile Menu Overlay */}
+        <div
+          className={`fixed inset-0 z-[100] transition-all duration-300 md:hidden ${isMobileMenuOpen
+            ? "opacity-100 pointer-events-auto visible"
+            : "opacity-0 pointer-events-none invisible"
+            }`}
+        >
+          {/* Background */}
+          <div className="absolute inset-0 bg-[#050005]" />
 
+          {/* Glow effects */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-60">
+            <div className="absolute top-[-5%] right-[-5%] w-[80%] h-[60%] bg-[#D100D1]/20 blur-[130px] rounded-full animate-pulse" />
+            <div className="absolute bottom-[-10%] left-[-10%] w-[90%] h-[70%] bg-secondary/15 blur-[160px] rounded-full" />
+          </div>
+
+          <div className="absolute inset-0 flex flex-col pt-28 px-6 gap-4 overflow-y-auto custom-scrollbar">
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="absolute top-6 right-6 p-3 rounded-full bg-secondary/10 border border-secondary/30 text-secondary z-50 hover:bg-secondary/20 transition-all shadow-[0_0_20px_rgba(234,179,8,0.2)]"
+            >
+              <X className="h-7 w-7" />
+            </button>
+
+            {/* Language Selector in Menu */}
+            <div className={`transition-all duration-700 delay-100 flex justify-center mb-6 ${isMobileMenuOpen ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"}`}>
+              <LanguageTranslator id="google_translate_element_landing_mobile_menu" isLarge={true} />
+            </div>
+
+            <div className="space-y-4 relative z-10 flex-grow">
+              {[
+                { label: "Try Free Sample", icon: Gift, action: () => { scrollToTop(); setIsMobileMenuOpen(false); } },
+                { label: "What is Numerology?", icon: Orbit, href: "#what-is-numerology" },
+                { label: "Premium Report", icon: Crown, href: "#premium-report" },
+                { label: "User Reviews", icon: Star, href: "#testimonials" },
+                { label: "Wisdom Blog", icon: BookOpen, href: "/blog" },
+              ].map((item, i) => (
+                item.action ? (
+                  <button
+                    key={i}
+                    onClick={item.action}
+                    className="w-full flex items-center gap-5 p-5 rounded-2xl bg-[#0d000d] border border-white/5 text-left transition-all active:scale-[0.98] active:bg-secondary/10 group"
+                  >
+                    <div className="p-3 rounded-xl bg-secondary/5 border border-secondary/20 text-secondary group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                      <item.icon className="h-6 w-6" />
+                    </div>
+                    <span className="font-bold text-lg text-white/90 group-hover:text-secondary transition-colors uppercase tracking-widest">{item.label}</span>
+                  </button>
+                ) : item.href.startsWith("#") ? (
+                  <a
+                    key={i}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-5 p-5 rounded-2xl bg-[#0d000d] border border-white/5 transition-all active:scale-[0.98] active:bg-secondary/10 group"
+                  >
+                    <div className="p-3 rounded-xl bg-secondary/5 border border-secondary/20 text-secondary group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                      <item.icon className="h-6 w-6" />
+                    </div>
+                    <span className="font-bold text-lg text-white/90 group-hover:text-secondary transition-colors uppercase tracking-widest">{item.label}</span>
+                  </a>
+                ) : (
+                  <Link
+                    key={i}
+                    to={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-5 p-5 rounded-2xl bg-[#0d000d] border border-white/5 transition-all active:scale-[0.98] active:bg-secondary/10 group"
+                  >
+                    <div className="p-3 rounded-xl bg-secondary/5 border border-secondary/20 text-secondary group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                      <item.icon className="h-6 w-6" />
+                    </div>
+                    <span className="font-bold text-lg text-white/90 group-hover:text-secondary transition-colors uppercase tracking-widest">{item.label}</span>
+                  </Link>
+                )
+              ))}
+            </div>
+
+            <div className="pb-12">
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  const element = document.getElementById('premium-form-container');
+                  if (element) element.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="w-full flex items-center justify-center gap-4 py-6 rounded-[2rem] bg-secondary text-black font-black uppercase tracking-widest shadow-[0_0_50px_rgba(234,179,8,0.4)]"
+              >
+                <Crown className="h-7 w-7 fill-black/20" />
+                Get Premium Now
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Navbar */}
         <nav className="w-full fixed top-0 z-50 glass-panel bg-background/70 border-b border-border">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
@@ -728,22 +856,27 @@ const Index = () => {
                 </div>
                 <span className="font-bold text-2xl tracking-tighter group-hover:text-secondary transition-colors">NumGuru</span>
               </div>
+
               <div className="hidden md:flex items-center space-x-6">
-                <button
-                  className="text-sm font-medium hover:text-secondary transition-all hover:drop-shadow-[0_0_10px_rgba(234,179,8,0.5)] px-3 py-1.5 rounded-full hover:bg-secondary/5"
-                  onClick={scrollToTop}
-                >
-                  Try Free Sample
-                </button>
-                <a className="text-sm font-medium hover:text-secondary transition-all hover:drop-shadow-[0_0_10px_rgba(234,179,8,0.5)] px-3 py-1.5 rounded-full hover:bg-secondary/5" href="#what-is-numerology">
-                  What is Numerology?
-                </a>
-                <a className="text-sm font-medium hover:text-secondary transition-all hover:drop-shadow-[0_0_10px_rgba(234,179,8,0.5)] px-3 py-1.5 rounded-full hover:bg-secondary/5" href="#premium-report">
-                  Premium Report
-                </a>
-                <a className="text-sm font-medium hover:text-secondary transition-all hover:drop-shadow-[0_0_10px_rgba(234,179,8,0.5)] px-3 py-1.5 rounded-full hover:bg-secondary/5" href="#testimonials">
-                  Reviews
-                </a>
+                <button className="text-sm font-medium hover:text-secondary px-3 py-1.5 rounded-full hover:bg-secondary/5" onClick={scrollToTop}>Try Free Sample</button>
+                <a className="text-sm font-medium hover:text-secondary px-3 py-1.5 rounded-full hover:bg-secondary/5" href="#what-is-numerology">What is Numerology?</a>
+                <a className="text-sm font-medium hover:text-secondary px-3 py-1.5 rounded-full hover:bg-secondary/5" href="#premium-report">Premium Report</a>
+                <a className="text-sm font-medium hover:text-secondary px-3 py-1.5 rounded-full hover:bg-secondary/5" href="#testimonials">Reviews</a>
+                <Link className="text-sm font-medium hover:text-secondary px-3 py-1.5 rounded-full hover:bg-secondary/5" to="/blog">Blog</Link>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="hidden md:flex items-center">
+                  <LanguageTranslator id="google_translate_element_landing" />
+                </div>
+                <div className="md:hidden flex items-center">
+                  <button
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="p-2 rounded-xl bg-secondary/10 border border-secondary/20 text-secondary transition-all"
+                  >
+                    {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -773,7 +906,7 @@ const Index = () => {
             <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center lg:items-start justify-between gap-6 lg:gap-10">
               <div className="flex-1 text-center lg:text-left">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-muted-foreground text-xs font-semibold mb-4 border border-border">
-                  <span className="material-icons-round text-sm">verified</span>
+                  <CheckCircle2 className="w-4 h-4 text-secondary" />
                   Pythagorean System
                 </div>
 
@@ -786,7 +919,7 @@ const Index = () => {
                 </p>
 
                 <div
-                  className="bg-[#030303]/90 border border-[#D100D1]/20 p-5 sm:p-6 rounded-[2rem] shadow-2xl max-w-lg mx-auto lg:mx-0 mb-6 relative overflow-hidden group backdrop-blur-xl transition-all duration-500 hover:border-[#D100D1]/40"
+                  className="bg-[#030303]/90 border border-secondary/20 p-5 sm:p-6 rounded-[2rem] shadow-2xl max-w-lg mx-auto lg:mx-0 mb-6 relative overflow-hidden group backdrop-blur-xl transition-all duration-500 hover:border-secondary/40 card-interactive"
                   id="free-sample-card"
                   onMouseMove={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
@@ -794,9 +927,9 @@ const Index = () => {
                     e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
                   }}
                 >
-                  <div className="absolute -right-10 -top-10 w-32 h-32 bg-[#D100D1]/20 rounded-full blur-2xl group-hover:bg-[#D100D1]/30 transition-all duration-500" />
+                  <div className="absolute -right-10 -top-10 w-32 h-32 bg-secondary/10 rounded-full blur-2xl group-hover:bg-secondary/20 transition-all duration-500" />
                   <div className="flex items-center gap-2 mb-4 relative z-10">
-                    <span className="material-icons-round text-secondary">redeem</span>
+                    <Gift className="h-5 w-5 text-secondary" />
                     <h3 className="font-bold text-lg">Try a Free Sample Reading</h3>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4 relative z-10">
@@ -873,7 +1006,7 @@ const Index = () => {
 
               <div className="flex-1 w-full max-w-md mx-auto lg:mx-0" id="premium-form-container">
                 <div
-                  className="bg-[#030303]/95 glass-panel p-5 sm:p-6 rounded-[2rem] shadow-2xl border-2 border-secondary/40 relative transition-all duration-500 hover:border-secondary/70"
+                  className="bg-[#030303]/95 glass-panel p-5 sm:p-6 rounded-[2rem] shadow-2xl border-2 border-secondary/40 relative transition-all duration-500 hover:border-secondary/70 card-interactive"
                   onMouseMove={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
@@ -967,13 +1100,11 @@ const Index = () => {
                       Unlock Full Report
                     </button>
 
-                    <div className="flex items-center justify-between text-xs pt-1.5 border-t border-border">
-                      <span className="text-muted-foreground line-through">₹499</span>
+                    <div className="flex items-center justify-between text-xs mt-auto pt-3 border-t border-white/10">
+                      <span className="text-white/40 line-through">{symbol}{originalAmount}</span>
                       <div className="flex items-center gap-2">
-                        <span className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded text-[10px] font-semibold">
-                          90% OFF
-                        </span>
-                        <span className="font-bold text-xl text-secondary">₹49</span>
+                        <span className="bg-secondary/20 text-secondary px-1.5 py-0.5 rounded text-[10px] font-bold">90% OFF</span>
+                        <span className="font-bold text-xl text-white">{symbol}{amount}</span>
                       </div>
                     </div>
                   </form>
@@ -1113,7 +1244,7 @@ const Index = () => {
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-[0.4em] mb-8">
                   The Full Access Experience
                 </div>
-                <h2 className="text-4xl md:text-7xl font-sans font-black mb-8 text-white tracking-tight leading-[0.9]">
+                <h2 className="text-3xl sm:text-4xl md:text-7xl font-sans font-black mb-6 md:mb-8 text-white tracking-tight leading-[1.1] md:leading-[0.9]">
                   What's Inside Your <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary via-red-500 to-secondary italic">Premium Report?</span>
                 </h2>
                 <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl leading-relaxed font-medium">
@@ -1125,9 +1256,9 @@ const Index = () => {
 
                 {/* Sub-section: Premium Insights */}
                 <div className="relative">
-                  <div className="flex items-center gap-4 mb-12">
+                  <div className="flex items-center gap-3 md:gap-4 mb-10 md:mb-12">
                     <div className="h-px bg-gradient-to-r from-transparent to-[#D100D1]/40 flex-grow" />
-                    <h3 className="text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-widest text-center">
+                    <h3 className="text-xl sm:text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-[0.15em] md:tracking-widest text-center">
                       Premium <span className="text-[#D100D1]">Insights</span>
                     </h3>
                     <div className="h-px bg-gradient-to-l from-transparent to-[#D100D1]/40 flex-grow" />
@@ -1195,9 +1326,9 @@ const Index = () => {
 
                 {/* Sub-section: Included in Full Report */}
                 <div className="relative">
-                  <div className="flex items-center gap-4 mb-12">
+                  <div className="flex items-center gap-3 md:gap-4 mb-10 md:mb-12">
                     <div className="h-px bg-gradient-to-r from-transparent to-[#D100D1]/40 flex-grow" />
-                    <h3 className="text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-widest text-center">
+                    <h3 className="text-xl sm:text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-[0.15em] md:tracking-widest text-center">
                       Included in <span className="text-[#D100D1]">Full Report</span>
                     </h3>
                     <div className="h-px bg-gradient-to-l from-transparent to-[#D100D1]/40 flex-grow" />
@@ -1247,9 +1378,9 @@ const Index = () => {
 
                 {/* Sub-section: Color Alchemy & Guidance */}
                 <div className="relative">
-                  <div className="flex items-center gap-4 mb-12">
+                  <div className="flex items-center gap-3 md:gap-4 mb-10 md:mb-12">
                     <div className="h-px bg-gradient-to-r from-transparent to-[#D100D1]/40 flex-grow" />
-                    <h3 className="text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-widest text-center">
+                    <h3 className="text-xl sm:text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-[0.15em] md:tracking-widest text-center">
                       Color <span className="text-[#D100D1]">Alchemy</span> & Guidance
                     </h3>
                     <div className="h-px bg-gradient-to-l from-transparent to-[#D100D1]/40 flex-grow" />
@@ -1296,9 +1427,9 @@ const Index = () => {
 
                 {/* Sub-section: Cosmic Number Alignment */}
                 <div className="relative">
-                  <div className="flex items-center gap-4 mb-12">
+                  <div className="flex items-center gap-3 md:gap-4 mb-10 md:mb-12">
                     <div className="h-px bg-gradient-to-r from-transparent to-[#D100D1]/40 flex-grow" />
-                    <h3 className="text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-widest text-center">
+                    <h3 className="text-xl sm:text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-[0.15em] md:tracking-widest text-center">
                       Cosmic Number <span className="text-[#D100D1]">Alignment</span>
                     </h3>
                     <div className="h-px bg-gradient-to-l from-transparent to-[#D100D1]/40 flex-grow" />
@@ -1343,54 +1474,84 @@ const Index = () => {
                   </div>
                 </div>
 
-                {/* Sub-section: The Cosmic Remedies Library */}
+                {/* Sub-section: The Sacred Remedies Library */}
                 <div className="relative">
                   <div className="flex items-center gap-4 mb-12">
                     <div className="h-px bg-gradient-to-r from-transparent to-[#D100D1]/40 flex-grow" />
                     <h3 className="text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-widest text-center">
-                      The Cosmic <span className="text-[#D100D1]">Remedies</span> Library
+                      The Sacred <span className="text-[#D100D1]">Remedies</span> Library
                     </h3>
                     <div className="h-px bg-gradient-to-l from-transparent to-[#D100D1]/40 flex-grow" />
                   </div>
 
-                  <div className="max-w-7xl mx-auto">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {[
-                        { title: "Personalized Mantras & Daily Japa", icon: Zap, label: "Vibration", benefit: "Receive custom Sanskrit or phonetic seed sounds tailored to your active life-path number, designed to clean your mental slate daily." },
-                        { title: "Sacred Habits & Morning Rituals", icon: Sparkles, label: "Routine", benefit: "Specific morning sequences—from the direction you face to the order of tasks—that align your physical body with the day's cosmic vibe." },
-                        { title: "Gemstone & Crystal Guide", icon: Gem, label: "Frequency", benefit: "Identify the earth-frequencies (stones) that act as permanent vibrational anchors for your energy, providing protection and focus." },
-                        { title: "Affirmation Shielding Techniques", icon: Shield, label: "Protection", benefit: "Learn to build a 'Mental Shield' using specific linguistic commands that repel negative external influences and self-doubt." },
-                        { title: "Sound Healing & Frequencies", icon: Music, label: "Audio Meta", benefit: "Discover the exact Hertz frequencies (Binaural beats/Solfeggio) that resonate with your numeric signature for deep meditation." },
-                        { title: "Space Clearing Divine Guidance", icon: Moon, label: "Zen Space", benefit: "How to arrange your immediate living or work environment to ensure energy flows freely according to your primary numeric destiny." }
-                      ].map((item, i) => (
-                        <div key={i} className="group relative p-6 rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full">
-                          <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-
-                          <div className="relative z-10 flex flex-col h-full">
-                            <div className="mb-4 flex items-center justify-between">
-                              <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
-                                <item.icon className="h-5 w-5" />
-                              </div>
-                              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">{item.label}</span>
-                            </div>
-
-                            <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">
-                              {item.title}
-                            </h4>
-
-                            <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium">
-                              {item.benefit}
-                            </p>
-
-                            <div className="pt-4 border-t border-white/5 mt-auto">
-                              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black hover:shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all duration-300 cursor-pointer group/unlock">
-                                <Lock className="h-3 w-3" />
-                                <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock to Read</span>
-                              </div>
-                            </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* 1. Daily Habit */}
+                    <div className="group relative overflow-hidden rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full p-6">
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                      <div className="relative z-10 flex flex-col h-full">
+                        <div className="mb-4 flex items-center justify-between">
+                          <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                            <CalendarIcon className="h-5 w-5" />
+                          </div>
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">Ritual Sync</span>
+                        </div>
+                        <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">Daily Habit</h4>
+                        <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium">
+                          Identify the specific morning sequences—from the direction you face to the order of tasks—that align your physical body with the day's cosmic vibe.
+                        </p>
+                        <div className="pt-4 border-t border-white/5 mt-auto">
+                          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black transition-all duration-300 cursor-pointer">
+                            <Lock className="h-3 w-3" />
+                            <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock Full Ritual</span>
                           </div>
                         </div>
-                      ))}
+                      </div>
+                    </div>
+
+                    {/* 2. Power Color */}
+                    <div className="group relative overflow-hidden rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full p-6">
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                      <div className="relative z-10 flex flex-col h-full">
+                        <div className="mb-4 flex items-center justify-between">
+                          <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                            <Palette className="h-5 w-5" />
+                          </div>
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">Auric Shield</span>
+                        </div>
+                        <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">Power Color</h4>
+                        <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium">
+                          Discover the exact color frequencies that act as a shield for your unique aura, protecting you from negative vibrations and amplifying your presence.
+                        </p>
+                        <div className="pt-4 border-t border-white/5 mt-auto">
+                          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black transition-all duration-300 cursor-pointer">
+                            <Lock className="h-3 w-3" />
+                            <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock Full Shield</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 3. Cosmic Frequency */}
+                    <div className="group relative overflow-hidden rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full p-6">
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                      <div className="relative z-10 flex flex-col h-full">
+                        <div className="mb-4 flex items-center justify-between">
+                          <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                            <Zap className="h-5 w-5" />
+                          </div>
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">Soul Mantra</span>
+                        </div>
+                        <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">Cosmic Frequency</h4>
+                        <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium">
+                          Receive the sacred Sanskrit seed sounds and mantras that resonate with your birth frequency, clearing mental fog and activating your soul purpose.
+                        </p>
+                        <div className="pt-4 border-t border-white/5 mt-auto">
+                          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black transition-all duration-300 cursor-pointer">
+                            <Lock className="h-3 w-3" />
+                            <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock Full Mantra</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1398,17 +1559,29 @@ const Index = () => {
                 <div className="mt-24 text-center">
                   <button
                     onClick={() => {
-                      const datePicker = document.querySelector('[name="dob"]') as HTMLInputElement;
-                      if (datePicker) {
-                        datePicker.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        setTimeout(() => datePicker.focus(), 500);
+                      const element = document.getElementById('premium-form-container');
+                      if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                       }
                     }}
-                    className="group relative inline-flex items-center gap-4 px-10 py-5 rounded-full bg-gradient-to-r from-secondary to-red-600 text-black font-black text-sm md:text-base uppercase tracking-widest overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-[0_20px_50px_rgba(234,179,8,0.4)]"
+                    className="group relative inline-flex items-center gap-2 md:gap-4 px-6 py-3.5 md:px-12 md:py-6 rounded-full overflow-hidden transition-all duration-500 hover:scale-105 active:scale-95 shadow-[0_0_50px_rgba(234,179,8,0.3)] animate-pulse-glow"
                   >
-                    <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity" />
-                    <Crown className="h-6 w-6" />
-                    <span>Get My Premium Report Now</span>
+                    {/* Golden Gradient Background */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600" />
+
+                    {/* Animated Shimmer Shine */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      <div className="absolute inset-y-0 w-32 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-shimmer-shine -skew-x-[30deg]" />
+                    </div>
+
+                    {/* Button Content */}
+                    <div className="relative z-10 flex items-center gap-2 md:gap-3 text-black font-black text-[10px] sm:text-base md:text-lg uppercase tracking-[0.1em] md:tracking-[0.2em]">
+                      <Crown className="h-4 w-4 md:h-6 md:w-6 fill-black/20 group-hover:rotate-12 transition-transform duration-500" />
+                      <span className="whitespace-nowrap">Get My Premium Report Now</span>
+                    </div>
+
+                    {/* Subtle Overlay on Hover */}
+                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                   <div className="mt-8 flex flex-col md:flex-row items-center justify-center gap-6 text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">
                     <span className="flex items-center gap-2"><Lock className="h-3 w-3" /> Secure Payment</span>
@@ -1435,8 +1608,17 @@ const Index = () => {
                   className="absolute inset-0 w-full h-full object-cover object-center grayscale-[0.2] contrast-[1.1] hover:scale-105 transition-transform duration-[2000ms]"
                   src="/images/what is num.jpg"
                 />
+
+                {/* Desktop Side Fade */}
                 <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[#0d000d] to-transparent hidden md:block" />
-                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0d000d] to-transparent md:hidden" />
+
+                {/* Mobile Mirror Fade (Top & Bottom) */}
+                <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#0d000d] via-[#0d000d]/60 to-transparent md:hidden" />
+                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0d000d] via-[#0d000d]/40 to-transparent md:hidden" />
+
+                {/* Mobile Premium Golden Horizon Lines */}
+                <div className="absolute top-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-transparent via-secondary/50 to-transparent shadow-[0_0_15px_rgba(234,179,8,0.4)] md:hidden" />
+                <div className="absolute bottom-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-transparent via-secondary/50 to-transparent shadow-[0_0_15px_rgba(234,179,8,0.4)] md:hidden" />
               </div>
 
               {/* Right Side: Content */}
@@ -1581,17 +1763,17 @@ const Index = () => {
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-[0.3em] mb-6">
                   Community Feedback
                 </div>
-                <h2 className="text-4xl md:text-5xl font-sans font-black mb-6 text-white tracking-tight">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-sans font-black mb-6 text-white tracking-tight leading-tight">
                   What Our <span className="text-secondary italic">Users Say</span>
                 </h2>
-                <div className="flex justify-center items-center gap-4">
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4 border-y border-white/5 py-6 md:border-none md:py-0">
                   <div className="flex text-secondary drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]">
                     {[...Array(4)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 fill-current" />
+                      <Star key={i} className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />
                     ))}
-                    <StarHalf className="h-5 w-5 fill-current" />
+                    <StarHalf className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />
                   </div>
-                  <span className="text-slate-400 font-black tracking-widest text-sm uppercase text-white/90">4.8 out of 5 Overall Rating</span>
+                  <span className="text-slate-400 font-bold tracking-[0.15em] text-[10px] sm:text-sm uppercase text-white/80">4.8 out of 5 Overall Rating</span>
                 </div>
               </div>
 
@@ -1707,9 +1889,22 @@ const Index = () => {
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <div className="hidden md:block">
-                  <CarouselPrevious className="absolute -left-6 top-1/2 -translate-y-1/2 bg-secondary/10 border-secondary/20 text-secondary hover:bg-secondary hover:text-black transition-all" />
-                  <CarouselNext className="absolute -right-6 top-1/2 -translate-y-1/2 bg-secondary/10 border-secondary/20 text-secondary hover:bg-secondary hover:text-black transition-all" />
+                <div className="flex justify-center items-center gap-6 mt-10 md:mt-0">
+                  <CarouselPrevious className="static md:absolute md:-left-6 md:top-1/2 md:-translate-y-1/2 bg-secondary/10 border-secondary/20 text-secondary hover:bg-secondary hover:text-black transition-all h-12 w-12 md:h-10 md:w-10 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(234,179,8,0.1)]" />
+                  <div className="md:hidden flex gap-1.5 px-2">
+                    {Array.from({ length: count }).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => api?.scrollTo(i)}
+                        className={`h-1.5 transition-all duration-300 rounded-full ${current === i
+                          ? "w-6 bg-secondary"
+                          : "w-1.5 bg-secondary/20 hover:bg-secondary/40"
+                          }`}
+                        aria-label={`Go to slide ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                  <CarouselNext className="static md:absolute md:-right-6 md:top-1/2 md:-translate-y-1/2 bg-secondary/10 border-secondary/20 text-secondary hover:bg-secondary hover:text-black transition-all h-12 w-12 md:h-10 md:w-10 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(234,179,8,0.1)]" />
                 </div>
               </Carousel>
 
@@ -1741,7 +1936,7 @@ const Index = () => {
                 The Final Revelation
               </div>
 
-              <h2 className="text-4xl md:text-7xl font-sans font-black text-white mb-8 tracking-tighter leading-none shadow-secondary/10">
+              <h2 className="text-3xl sm:text-4xl md:text-7xl font-sans font-black text-white mb-6 md:mb-8 tracking-tighter leading-[1.1] md:leading-none">
                 Ready to Uncover Your <br />
                 <span className="text-secondary italic">Divine Destiny?</span>
               </h2>
@@ -1753,15 +1948,30 @@ const Index = () => {
 
               <div className="flex flex-col items-center gap-8">
                 <button
-                  className="group relative py-6 px-16 rounded-full bg-secondary hover:scale-105 transition-all duration-500 shadow-[0_20px_40px_rgba(234,179,8,0.2)] hover:shadow-[0_0_50px_rgba(234,179,8,0.4)] overflow-hidden"
-                  onClick={scrollToTop}
-                  type="button"
+                  onClick={() => {
+                    const element = document.getElementById('premium-form-container');
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                  }}
+                  className="group relative inline-flex items-center gap-2 md:gap-4 px-6 py-4 md:px-16 md:py-6 rounded-full overflow-hidden transition-all duration-500 hover:scale-105 active:scale-95 shadow-[0_0_50px_rgba(234,179,8,0.3)] animate-pulse-glow"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/40 to-white/0 -translate-x-full group-hover:animate-shimmer" />
-                  <span className="relative z-10 text-black font-black text-2xl tracking-tight flex items-center gap-3">
-                    Get Your Premium Report Now
-                    <ChevronRight className="w-6 h-6 transition-transform group-hover:translate-x-2" />
-                  </span>
+                  {/* Golden Gradient Background */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600" />
+
+                  {/* Animated Shimmer Shine */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute inset-y-0 w-32 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-shimmer-shine -skew-x-[30deg]" />
+                  </div>
+
+                  {/* Button Content */}
+                  <div className="relative z-10 flex items-center gap-2 md:gap-3 text-black font-black text-xs sm:text-lg md:text-2xl uppercase tracking-[0.05em] md:tracking-tight">
+                    <span className="whitespace-nowrap">Get Your Premium Report Now</span>
+                    <ChevronRight className="w-4 h-4 md:w-6 md:h-6 transition-transform group-hover:translate-x-2" />
+                  </div>
+
+                  {/* Subtle Overlay on Hover */}
+                  <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </button>
 
                 <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-4">
@@ -1781,76 +1991,7 @@ const Index = () => {
           </section>
         </main>
 
-        <footer className="bg-[#0d000d] border-t border-white/5 py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div className="col-span-1 md:col-span-2">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="material-icons-round text-secondary text-2xl">auto_awesome</span>
-                  <span className="font-bold text-lg">NumeroInsight</span>
-                </div>
-                <p className="text-muted-foreground text-sm max-w-xs">
-                  Based on Pythagorean numerology system. We are dedicated to providing accurate and insightful readings to help you navigate life's journey.
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-bold mb-4">Quick Links</h4>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>
-                    <a className="hover:text-secondary transition-colors" href="#">
-                      Home
-                    </a>
-                  </li>
-                  <li>
-                    <a className="hover:text-secondary transition-colors" href="#what-is-numerology">
-                      What is Numerology?
-                    </a>
-                  </li>
-                  <li>
-                    <a className="hover:text-secondary transition-colors" href="#premium-report">
-                      Premium Report
-                    </a>
-                  </li>
-                  <li>
-                    <a className="hover:text-secondary transition-colors" href="#">
-                      Contact Us
-                    </a>
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-bold mb-4">Legal</h4>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>
-                    <a className="hover:text-secondary transition-colors" href="#">
-                      Privacy Policy
-                    </a>
-                  </li>
-                  <li>
-                    <a className="hover:text-secondary transition-colors" href="#">
-                      Terms of Service
-                    </a>
-                  </li>
-                  <li>
-                    <a className="hover:text-secondary transition-colors" href="#">
-                      Refund Policy
-                    </a>
-                  </li>
-                  <li className="flex items-center gap-1 mt-4">
-                    <span className="material-icons-round text-base">lock</span>
-                    Secure Payment
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="border-t border-border mt-12 pt-8 text-center text-sm text-muted-foreground">
-              <p>© 2023 NumeroInsight. All rights reserved. Your data is not stored permanently.</p>
-            </div>
-          </div>
-        </footer>
+        <Footer />
       </div >
     );
   }

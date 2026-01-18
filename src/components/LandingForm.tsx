@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles, Star, Users } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface LandingFormProps {
   onSubmit: (name: string, dob: Date) => void;
 }
 
 export function LandingForm({ onSubmit }: LandingFormProps) {
+  const { symbol, amount } = useCurrency();
   const [name, setName] = useState("");
   const [dob, setDob] = useState("");
 
@@ -33,7 +35,7 @@ export function LandingForm({ onSubmit }: LandingFormProps) {
         <div className="flex items-center justify-center gap-2 mb-4">
           <Sparkles className="h-8 w-8 text-cosmic-gold" />
           <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground">
-            NumeroInsight
+            NumGuru
           </h1>
         </div>
         <p className="text-primary-foreground/80 text-lg max-w-md">
@@ -92,7 +94,7 @@ export function LandingForm({ onSubmit }: LandingFormProps) {
               <span>Instant Results</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="font-bold text-cosmic-gold">₹49</span>
+              <span className="font-bold text-cosmic-gold">{symbol}{amount}</span>
               <span>Only</span>
             </div>
             <div className="flex items-center gap-1">

@@ -52,6 +52,7 @@ export function useRazorpay() {
   const initiatePayment = useCallback(
     async (
       amount: number,
+      currency: string,
       customerName: string,
       onSuccess: () => void,
       onError: (error: string) => void
@@ -64,7 +65,7 @@ export function useRazorpay() {
       try {
         // Create order via edge function
         const { data, error } = await supabase.functions.invoke("create-razorpay-order", {
-          body: { amount },
+          body: { amount, currency },
         });
 
         if (error || !data?.order_id) {
@@ -73,9 +74,9 @@ export function useRazorpay() {
 
         const options: RazorpayOptions = {
           key: data.key_id,
-          amount: amount * 100,
-          currency: "INR",
-          name: "NumeroInsight",
+          amount: Math.round(amount * 100),
+          currency: currency,
+          name: "NumGuru",
           description: "Numerology Reading - Full Report",
           order_id: data.order_id,
           handler: async (response) => {

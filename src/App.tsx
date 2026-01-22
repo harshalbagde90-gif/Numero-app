@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { PrivacyPolicy, TermsConditions, RefundPolicy } from "./pages/Policies";
 import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import CosmicStartupLoader from "./components/CosmicStartupLoader";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/terms-conditions" element={<TermsConditions />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

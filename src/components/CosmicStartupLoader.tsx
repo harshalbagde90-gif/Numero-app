@@ -31,7 +31,8 @@ const CosmicStartupLoader: React.FC = () => {
         };
 
         const googTrans = getCookie('googtrans');
-        const isTranslated = googTrans && googTrans !== '/en/en';
+        const translationFlag = localStorage.getItem('translation_in_progress') === 'true';
+        const isTranslated = (googTrans && googTrans !== '/en/en') || translationFlag;
 
         if (isTranslated) {
             setIsVisible(true);
@@ -72,6 +73,7 @@ const CosmicStartupLoader: React.FC = () => {
 
                             // 3 second buffer for extra smoothness
                             setTimeout(() => {
+                                localStorage.removeItem('translation_in_progress');
                                 setIsVisible(false);
                             }, 3000);
                         } else {

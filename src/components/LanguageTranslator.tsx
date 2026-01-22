@@ -70,11 +70,13 @@ const LanguageTranslator: React.FC<{ id?: string, isLarge?: boolean }> = ({ isLa
 
         setIsModalOpen(false);
 
-        // Set Cookies and Reload immediately
+        // Set Cookies, LocalStorage and Reload immediately
         const cookieVal = `/en/${tempLang.code}`;
         document.cookie = `googtrans=${cookieVal}; path=/`;
         document.cookie = `googtrans=${cookieVal}; path=/; domain=${window.location.hostname}`;
+
         localStorage.setItem('selected_language_name', tempLang.name);
+        localStorage.setItem('translation_in_progress', 'true');
 
         window.location.reload();
     };
@@ -91,8 +93,8 @@ const LanguageTranslator: React.FC<{ id?: string, isLarge?: boolean }> = ({ isLa
                     setIsModalOpen(true);
                 }}
                 className={`flex items-center gap-2 rounded-full transition-all active:scale-95 group whitespace-nowrap notranslate ${isLarge
-                        ? 'px-8 py-3.5 bg-secondary/10 border-2 border-secondary/50 shadow-[0_0_30px_rgba(234,179,8,0.2)]'
-                        : 'px-4 py-2 bg-white/5 border border-secondary/30 hover:border-secondary'
+                    ? 'px-8 py-3.5 bg-secondary/10 border-2 border-secondary/50 shadow-[0_0_30px_rgba(234,179,8,0.2)]'
+                    : 'px-4 py-2 bg-white/5 border border-secondary/30 hover:border-secondary'
                     }`}
             >
                 <div className={`flex items-center gap-2 flex-nowrap ${isLarge ? 'gap-3' : 'gap-2'}`}>

@@ -1,42 +1,27 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Orbit, Calendar, Clock, ChevronRight, Share2, Bookmark } from "lucide-react";
 import { Footer } from "@/components/Footer";
 
 const Blog = () => {
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, []);
+    const [blogPosts, setBlogPosts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const blogPosts = [
-        {
-            id: 1,
-            title: "The Power of Life Path Number 11: Decoding the Master Intuitive",
-            excerpt: "Discover why Life Path 11 is considered the 'Light Messenger' of numerology and how to harness its high-vibrational energy.",
-            date: "Jan 15, 2026",
-            readTime: "6 min",
-            category: "Master Numbers",
-            image: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80"
-        },
-        {
-            id: 2,
-            title: "Pythagorean vs. Chaldean Numerology: Which System Should You Use?",
-            excerpt: "An in-depth comparison of the two most powerful systems in numerology. Learn which one resonates most with your soul's journey.",
-            date: "Jan 12, 2026",
-            readTime: "8 min",
-            category: "Advanced Wisdom",
-            image: "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&q=80"
-        },
-        {
-            id: 3,
-            title: "3 Secret Numbers That Influence Your Career Success",
-            excerpt: "Your birthday holds the key to your professional abundance. Find out which hidden numbers are guiding your career path.",
-            date: "Jan 10, 2026",
-            readTime: "5 min",
-            category: "Abundance",
-            image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80"
-        }
-    ];
+    useEffect(() => {
+        const fetchPosts = async () => {
+            try {
+                const response = await fetch("/blog-posts.json");
+                const data = await response.json();
+                setBlogPosts(data);
+            } catch (error) {
+                console.error("Error fetching blogs:", error);
+            } finally {
+                setLoading(false);
+                window.scrollTo(0, 0);
+            }
+        };
+        fetchPosts();
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#020202] text-white font-sans selection:bg-secondary/30">
@@ -81,56 +66,58 @@ const Blog = () => {
                         </p>
                     </div>
 
-                    {/* Featured Post */}
-                    <div className="group relative mb-24 rounded-[3rem] overflow-hidden border border-white/10 bg-white/[0.02] shadow-2xl transition-all duration-700 hover:border-secondary/30">
-                        <div className="grid grid-cols-1 lg:grid-cols-2">
-                            <div className="relative h-[300px] lg:h-auto overflow-hidden">
-                                <img
-                                    src="https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?auto=format&fit=crop&w=1200&q=80"
-                                    alt="Featured Post"
-                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-r from-[#020202] via-transparent to-transparent hidden lg:block" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-transparent to-transparent lg:hidden" />
-                            </div>
-                            <div className="p-10 md:p-16 flex flex-col justify-center gap-8 relative z-10">
-                                <div className="flex items-center gap-4 text-xs font-black uppercase tracking-widest text-secondary">
-                                    <span>Must Read</span>
-                                    <div className="h-1 w-1 rounded-full bg-white/20" />
-                                    <span className="text-white/60">Featured Wisdom</span>
+                    {/* Featured Post (Latest) */}
+                    {blogPosts.length > 0 && (
+                        <div className="group relative mb-24 rounded-[3rem] overflow-hidden border border-white/10 bg-white/[0.02] shadow-2xl transition-all duration-700 hover:border-secondary/30">
+                            <div className="grid grid-cols-1 lg:grid-cols-2">
+                                <div className="relative h-[300px] lg:h-auto overflow-hidden">
+                                    <img
+                                        src={blogPosts[0].image}
+                                        alt={blogPosts[0].title}
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-[#020202] via-transparent to-transparent hidden lg:block" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-transparent to-transparent lg:hidden" />
                                 </div>
-                                <h2 className="text-3xl md:text-5xl font-serif font-black tracking-tight leading-[1.1]">
-                                    2026 Numerology Forecast: The Year of Global Harmony
-                                </h2>
-                                <p className="text-slate-400 text-lg leading-relaxed font-medium">
-                                    The numbers align for a massive shift in consciousness. Discover what the '1' year cycle means for your personal and professional growth in 2026.
-                                </p>
-                                <div className="flex items-center justify-between pt-8 border-t border-white/5">
-                                    <div className="flex items-center gap-6">
-                                        <div className="flex items-center gap-2 text-slate-500 text-xs">
-                                            <Calendar className="h-4 w-4" />
-                                            <span>Jan 18, 2026</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-slate-500 text-xs">
-                                            <Clock className="h-4 w-4" />
-                                            <span>12 min read</span>
-                                        </div>
+                                <div className="p-10 md:p-16 flex flex-col justify-center gap-8 relative z-10">
+                                    <div className="flex items-center gap-4 text-xs font-black uppercase tracking-widest text-secondary">
+                                        <span>Must Read</span>
+                                        <div className="h-1 w-1 rounded-full bg-white/20" />
+                                        <span className="text-white/60">Featured Wisdom</span>
                                     </div>
-                                    <Link to="#" className="flex items-center gap-2 text-secondary font-black uppercase tracking-widest text-xs group/btn">
-                                        Begin Reading
-                                        <ChevronRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
-                                    </Link>
+                                    <h2 className="text-3xl md:text-5xl font-serif font-black tracking-tight leading-[1.1]">
+                                        {blogPosts[0].title}
+                                    </h2>
+                                    <p className="text-slate-400 text-lg leading-relaxed font-medium">
+                                        {blogPosts[0].excerpt}
+                                    </p>
+                                    <div className="flex items-center justify-between pt-8 border-t border-white/5">
+                                        <div className="flex items-center gap-6">
+                                            <div className="flex items-center gap-2 text-slate-500 text-xs">
+                                                <Calendar className="h-4 w-4" />
+                                                <span>{blogPosts[0].date}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-slate-500 text-xs">
+                                                <Clock className="h-4 w-4" />
+                                                <span>{blogPosts[0].readTime}</span>
+                                            </div>
+                                        </div>
+                                        <Link to={`/blog/${blogPosts[0].slug}`} className="flex items-center gap-2 text-secondary font-black uppercase tracking-widest text-xs group/btn">
+                                            Begin Reading
+                                            <ChevronRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Blog Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {blogPosts.map((post) => (
                             <Link
                                 key={post.id}
-                                to="#"
+                                to={`/blog/${post.slug}`}
                                 className="group flex flex-col rounded-[2.5rem] bg-white/[0.02] border border-white/10 overflow-hidden hover:border-secondary/30 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
                             >
                                 <div className="h-64 overflow-hidden relative">

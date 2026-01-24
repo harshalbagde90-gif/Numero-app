@@ -25,6 +25,22 @@ const BlogPost = () => {
     useEffect(() => {
         const fetchPost = async () => {
             try {
+                // Try to fetch from the specific file in the folder first
+                // This allows automation to just drop a new JSON file
+                const individualResponse = await fetch(`/blog-posts/${slug}.json`);
+
+                if (individualResponse.ok) {
+                    const data = await individualResponse.json();
+                    // Handle case where individual file might be the object directly or an array
+                    const postData = Array.isArray(data) ? data[0] : data;
+                    if (postData) {
+                        setPost(postData);
+                        setLoading(false);
+                        return;
+                    }
+                }
+
+                // Fallback: search in the main blog-posts.json if individual file not found
                 const response = await fetch("/blog-posts.json");
                 const posts: BlogPostData[] = await response.json();
                 const foundPost = posts.find(p => p.slug === slug);

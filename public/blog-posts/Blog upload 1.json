@@ -1,1 +1,0 @@
-{   "id": "{{ $json.id }}",   "title": "{{ $json.title }}",   "slug": "{{ $json.title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') }}",   "excerpt": "{{ $json.excerpt }}",   "category": "{{ $json.category }}",   "date": "{{ $json.date }}",   "readTime": "{{ $json.readTime }}",   "image": "{{ $json.image }}",   "content": "{{ $json.content }}" }

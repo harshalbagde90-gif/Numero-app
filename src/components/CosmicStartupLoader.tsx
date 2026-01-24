@@ -33,6 +33,7 @@ const CosmicStartupLoader: React.FC = () => {
         const googTrans = getCookie('googtrans');
         const translationFlag = localStorage.getItem('translation_in_progress') === 'true';
         const isTranslated = (googTrans && googTrans !== '/en/en') || translationFlag;
+        const isTargetingEnglish = savedLang === 'English';
 
         if (isTranslated) {
             setIsVisible(true);
@@ -45,47 +46,56 @@ const CosmicStartupLoader: React.FC = () => {
                     clearInterval(progressInterval);
                 } else {
                     setProgress(Math.round(currentProgress));
-                    // Update technical scripts based on progress
                     const scriptIdx = Math.floor((currentProgress / 100) * technicalScripts.length);
                     setScriptIndex(scriptIdx);
                 }
             }, 30);
 
-            // Wait for Google Translate
+            // Safety Fallback (Max 8 seconds) - Never let user get stuck
+            const safetyTimeout = setTimeout(() => {
+                finishLoading();
+            }, 8000);
+
+            const finishLoading = () => {
+                clearInterval(checkTranslation);
+                clearInterval(progressInterval);
+                clearTimeout(safetyTimeout);
+
+                let finalProg = currentProgress;
+                const finalTimer = setInterval(() => {
+                    finalProg += 2;
+                    if (finalProg >= 100) {
+                        setProgress(100);
+                        setScriptIndex(technicalScripts.length - 1);
+                        clearInterval(finalTimer);
+                        setTimeout(() => {
+                            localStorage.removeItem('translation_in_progress');
+                            setIsVisible(false);
+                        }, 2000);
+                    } else {
+                        setProgress(Math.min(100, Math.round(finalProg)));
+                    }
+                }, 40);
+            };
+
+            // Wait for Google Translate OR skip if targeting English
             const checkTranslation = setInterval(() => {
                 const isLoaded = document.documentElement.classList.contains('translated-ltr') ||
                     document.documentElement.classList.contains('translated-rtl') ||
                     document.body.classList.contains('translated-ltr') ||
                     document.body.classList.contains('translated-rtl');
 
-                if (isLoaded) {
-                    clearInterval(checkTranslation);
-                    clearInterval(progressInterval);
-
-                    // Final push to 100% smooth
-                    let finalProg = currentProgress;
-                    const finalTimer = setInterval(() => {
-                        finalProg += 1;
-                        if (finalProg >= 100) {
-                            setProgress(100);
-                            setScriptIndex(technicalScripts.length - 1);
-                            clearInterval(finalTimer);
-
-                            // 3 second buffer for extra smoothness
-                            setTimeout(() => {
-                                localStorage.removeItem('translation_in_progress');
-                                setIsVisible(false);
-                            }, 3000);
-                        } else {
-                            setProgress(Math.round(finalProg));
-                        }
-                    }, 50);
+                // If targeting English, we don't wait for translation classes
+                // Also check if Google Translate bar is gone
+                if (isTargetingEnglish || isLoaded) {
+                    finishLoading();
                 }
             }, 500);
 
             return () => {
                 clearInterval(checkTranslation);
                 clearInterval(progressInterval);
+                clearTimeout(safetyTimeout);
             };
         }
     }, []);

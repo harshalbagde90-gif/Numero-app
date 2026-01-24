@@ -23,35 +23,25 @@ const BlogPost = () => {
     const [scrollProgress, setScrollProgress] = useState(0);
 
     useEffect(() => {
-        const fetchPost = async () => {
+        const fetchPost = () => {
             try {
-                // Try to fetch from the specific file in the folder first
-                // This allows automation to just drop a new JSON file
-                const individualResponse = await fetch(`/blog-posts/${slug}.json`);
+                // Use Vite's magic to find the post in the folder
+                const postModules = import.meta.glob("/src/content/blogs/*.json", { eager: true });
 
-                if (individualResponse.ok) {
-                    const data = await individualResponse.json();
-                    // Handle case where individual file might be the object directly or an array
-                    const postData = Array.isArray(data) ? data[0] : data;
-                    if (postData) {
-                        setPost(postData);
-                        setLoading(false);
-                        return;
-                    }
-                }
+                const posts = Object.values(postModules).map((module: any) => {
+                    return module.default || module;
+                });
 
-                // Fallback: search in the main blog-posts.json if individual file not found
-                const response = await fetch("/blog-posts.json");
-                const posts: BlogPostData[] = await response.json();
-                const foundPost = posts.find(p => p.slug === slug);
+                const foundPost = posts.find((p: any) => p.slug === slug);
 
                 if (foundPost) {
                     setPost(foundPost);
                 } else {
+                    console.error("Post not found in folder for slug:", slug);
                     navigate("/blog");
                 }
             } catch (error) {
-                console.error("Error fetching post:", error);
+                console.error("Error loading post from folder:", error);
                 navigate("/blog");
             } finally {
                 setLoading(false);

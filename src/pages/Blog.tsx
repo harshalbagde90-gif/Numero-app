@@ -8,14 +8,25 @@ const Blog = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchPosts = async () => {
+        const fetchPosts = () => {
             try {
-                const response = await fetch("/blog-posts.json");
-                const data = await response.json();
-                const validPosts = Array.isArray(data) ? data.filter(p => p.id && p.slug) : [];
+                // Use Vite's magic to scan the folder automatically!
+                // This finds all .json files in src/content/blogs
+                const postModules = import.meta.glob("/src/content/blogs/*.json", { eager: true });
+
+                const posts = Object.values(postModules).map((module: any) => {
+                    // Extract the default export or the whole module if it's already the object
+                    return module.default || module;
+                });
+
+                // Filter out invalid posts and sort by ID (descending) for latest first
+                const validPosts = posts
+                    .filter(p => p.id && p.slug)
+                    .sort((a, b) => String(b.id).localeCompare(String(a.id)));
+
                 setBlogPosts(validPosts);
             } catch (error) {
-                console.error("Error fetching blogs:", error);
+                console.error("Error loading blogs from folder:", error);
             } finally {
                 setLoading(false);
                 window.scrollTo(0, 0);

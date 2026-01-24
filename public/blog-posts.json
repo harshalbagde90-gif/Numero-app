@@ -1,4 +1,5 @@
 [
+<<<<<<< HEAD
     {
         "id": "20260125",
         "title": "Mobile Number Numerology: Is Your Phone Number Lucky or Unlucky?",
@@ -42,4 +43,16 @@
         "category": "Advanced Wisdom",
         "image": "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&q=80"
     }
+=======
+  {
+    "id": 20260124,
+    "title": "2026 Numerology Predictions: What Your Birth Date Number Reveals",
+    "slug": "2026-numerology-predictions-what-your-birth-date-number-reveals",
+    "excerpt": "2026 ek shaktishaali Universal Year 1 hai, jo nayi shuruaat ka prateek hai. Jaaniye ki aapka Personal Year Number is saal aapke liye kya khaas laane waala hai.",
+    "category": "Numerology",
+    "date": "Jan 24, 2026",
+    "readTime": "12 min",
+    "image": "/blog-images/2026-numerology-predictions.png"
+  }
+>>>>>>> 323bccc6c87508c9d82a98408b6449ce58baa653
 ]

@@ -36,6 +36,17 @@ const BlogPost = () => {
 
                 if (foundPost) {
                     setPost(foundPost);
+
+                    // SEO Magic: Update browser title and meta tags for Google
+                    document.title = `${foundPost.title} | NumGuru Blog`;
+
+                    let metaDesc = document.querySelector('meta[name="description"]');
+                    if (!metaDesc) {
+                        metaDesc = document.createElement('meta');
+                        metaDesc.setAttribute('name', 'description');
+                        document.head.appendChild(metaDesc);
+                    }
+                    metaDesc.setAttribute('content', foundPost.excerpt || "Discover numerology insights on NumGuru.");
                 } else {
                     console.error("Post not found in folder for slug:", slug);
                     navigate("/blog");

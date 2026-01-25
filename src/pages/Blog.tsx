@@ -10,6 +10,13 @@ const Blog = () => {
     useEffect(() => {
         const fetchPosts = () => {
             try {
+                // SEO: Update title for the main blog list
+                document.title = "Numerology Insights & Articles | NumGuru Blog";
+                let metaDesc = document.querySelector('meta[name="description"]');
+                if (metaDesc) {
+                    metaDesc.setAttribute('content', "Explore the NumGuru blog for deep insights into numerology, life paths, and celestial wisdom.");
+                }
+
                 // Use Vite's magic to scan the folder automatically!
                 // This finds all .json files in src/content/blogs
                 const postModules = import.meta.glob("/src/content/blogs/*.json", { eager: true });

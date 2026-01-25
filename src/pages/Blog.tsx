@@ -57,91 +57,96 @@ const Blog = () => {
 
             {/* Navigation */}
             <nav className="fixed top-0 left-0 right-0 z-50 bg-[#020202]/80 backdrop-blur-2xl border-b border-white/5 h-16 md:h-20 transition-all duration-300">
-                <div className="max-w-7xl mx-auto h-full px-6 md:px-10 flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-3 group transition-all active:scale-95">
-                        <div className="p-2 rounded-xl bg-secondary/10 border border-secondary/20 group-hover:bg-secondary/20 transition-all duration-500">
-                            <Orbit className="h-5 w-5 text-secondary group-hover:rotate-180 transition-transform duration-1000" />
+                <div className="max-w-7xl mx-auto h-full px-4 md:px-10 flex items-center justify-between">
+                    <Link to="/" className="flex items-center gap-2 md:gap-3 group transition-all active:scale-95">
+                        <div className="p-1.5 md:p-2 rounded-lg md:rounded-xl bg-secondary/10 border border-secondary/20 group-hover:bg-secondary/20 transition-all duration-500">
+                            <Orbit className="h-4 w-4 md:h-5 md:w-5 text-secondary group-hover:rotate-180 transition-transform duration-1000" />
                         </div>
-                        <span className="font-serif font-black text-2xl text-white tracking-tighter">NumGuru</span>
+                        <span className="font-serif font-black text-xl md:text-2xl text-white tracking-tighter">NumGuru</span>
                     </Link>
 
-                    <Link to="/" className="flex items-center gap-2.5 text-[10px] font-black uppercase tracking-[0.25em] text-white/50 hover:text-white transition-all group">
-                        <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                        Return Home
+                    <Link to="/" className="flex items-center gap-2 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.25em] text-white/50 hover:text-white transition-all group">
+                        <ArrowLeft className="h-3.5 w-3.5 md:h-4 md:w-4 group-hover:-translate-x-1 transition-transform" />
+                        <span className="hidden xs:inline">Return Home</span>
+                        <span className="xs:hidden">Home</span>
                     </Link>
                 </div>
             </nav>
 
-            <main className="relative pt-32 md:pt-40 pb-32 px-6 md:px-10">
+            <main className="relative pt-24 md:pt-40 pb-32 px-4 md:px-10">
                 <div className="max-w-6xl mx-auto">
 
                     {/* Centered Editorial Header */}
-                    <div className="relative mb-24 md:mb-40 text-center flex flex-col items-center">
+                    <div className="relative mb-16 md:mb-40 text-center flex flex-col items-center">
                         <div className="inline-flex items-center gap-3 mb-6">
-                            <div className="h-px w-8 bg-secondary/40" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary">The Blog</span>
-                            <div className="h-px w-8 bg-secondary/40" />
+                            <div className="h-px w-6 md:w-8 bg-secondary/40" />
+                            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-secondary">The Blog</span>
+                            <div className="h-px w-6 md:w-8 bg-secondary/40" />
                         </div>
-                        <h1 className="text-5xl md:text-8xl font-serif font-black tracking-tighter leading-[0.9] mb-10 max-w-4xl">
+                        <h1 className="text-4xl md:text-8xl font-serif font-black tracking-tighter leading-[1.1] md:leading-[0.9] mb-8 md:mb-10 max-w-4xl px-2">
                             Welcome to the <br />
                             <span className="text-secondary italic">NumGuru Blog</span>
                         </h1>
-                        <p className="max-w-2xl text-slate-400 text-lg md:text-xl font-medium leading-relaxed opacity-80">
-                            Discover how numbers shape your life, career, and future. We share easy-to-understand numerology insights and practical tips to help you stay aligned with your highest potential.
+                        <p className="max-w-xl text-slate-400 text-base md:text-xl font-medium leading-relaxed opacity-80 px-4 md:px-0">
+                            Discover how numbers shape your life, career, and future. We share easy-to-understand numerology insights and practical tips.
                         </p>
                     </div>
 
                     {/* Editorial Blog Feed */}
-                    <div className="flex flex-col gap-20 md:gap-32">
+                    <div className="flex flex-col gap-12 md:gap-32">
                         {blogPosts.map((post, index) => (
                             <Link
                                 key={post.id}
                                 to={`/blog/${post.slug}`}
                                 className="group block focus:outline-none"
                             >
-                                <article className="flex flex-col lg:flex-row items-center gap-8 md:gap-16">
+                                <article className="flex flex-col lg:flex-row items-center gap-6 md:gap-16">
                                     {/* Professional Image Box (50%) */}
                                     <div className="w-full lg:w-1/2 aspect-[16/10] overflow-hidden relative rounded-2xl md:rounded-3xl border border-white/5 shadow-2xl">
                                         <img
                                             src={encodeURI(post.image)}
                                             alt={post.title}
                                             className="w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-105"
+                                            onError={(e) => {
+                                                const target = e.target as HTMLImageElement;
+                                                target.src = "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200";
+                                            }}
                                         />
                                         <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500" />
                                     </div>
 
                                     {/* Editorial Content Section (50%) */}
-                                    <div className="w-full lg:w-1/2 flex flex-col items-start text-left">
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-secondary">
+                                    <div className="w-full lg:w-1/2 flex flex-col items-start text-left px-2 md:px-0">
+                                        <div className="flex items-center gap-3 mb-3 md:mb-4">
+                                            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-secondary">
                                                 {index === 0 ? "Featured Choice" : post.category}
                                             </span>
-                                            <div className="w-6 h-px bg-white/10" />
+                                            <div className="w-4 md:w-6 h-px bg-white/10" />
                                         </div>
 
-                                        <h2 className="text-xl md:text-2xl lg:text-3xl xl:text-4xl font-sans font-bold leading-tight mb-5 transition-colors duration-500 group-hover:text-secondary">
+                                        <h2 className="text-xl md:text-2xl lg:text-3xl xl:text-4xl font-sans font-bold leading-tight mb-4 md:mb-5 transition-colors duration-500 group-hover:text-secondary">
                                             {post.title}
                                         </h2>
 
-                                        <p className="text-slate-400 text-sm md:text-base lg:text-lg leading-relaxed font-medium mb-6 line-clamp-3 md:line-clamp-3">
+                                        <p className="text-slate-400 text-sm md:text-base lg:text-lg leading-relaxed font-medium mb-5 md:mb-6 line-clamp-3">
                                             {post.excerpt}
                                         </p>
 
                                         {/* Meta Info Fixed at Bottom of Text Block */}
-                                        <div className="mt-auto w-full pt-8 border-t border-white/5 flex items-center justify-between">
-                                            <div className="flex items-center gap-6 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-white/30">
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="h-3.5 w-3.5" />
+                                        <div className="mt-auto w-full pt-6 md:pt-8 border-t border-white/5 flex items-center justify-between">
+                                            <div className="flex items-center gap-4 md:gap-6 text-[8px] md:text-[10px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] text-white/30">
+                                                <div className="flex items-center gap-1.5 md:gap-2">
+                                                    <Calendar className="h-3 w-3 md:h-3.5 md:w-3.5" />
                                                     <span>{post.date}</span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="h-3.5 w-3.5" />
+                                                <div className="flex items-center gap-1.5 md:gap-2">
+                                                    <Clock className="h-3 w-3 md:h-3.5 md:w-3.5" />
                                                     <span>{post.readTime}</span>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 text-secondary group-hover:translate-x-2 transition-transform duration-500">
-                                                <span className="text-[10px] font-black uppercase tracking-widest hidden md:inline">Read Story</span>
-                                                <ChevronRight className="h-4 w-4" />
+                                                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest hidden sm:inline">Read Story</span>
+                                                <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
                                             </div>
                                         </div>
                                     </div>

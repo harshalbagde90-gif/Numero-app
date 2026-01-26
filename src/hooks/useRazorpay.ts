@@ -63,13 +63,17 @@ export function useRazorpay() {
       }
 
       try {
-        // Create order via edge function
-        const { data, error } = await supabase.functions.invoke("create-razorpay-order", {
-          body: { amount, currency },
+        // Create order via Vercel API
+        const response = await fetch("/api/create-razorpay-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount, currency }),
         });
 
-        if (error || !data?.order_id) {
-          throw new Error(error?.message || "Failed to create order");
+        const data = await response.json();
+
+        if (!response.ok || !data?.order_id) {
+          throw new Error(data?.error || "Failed to create order");
         }
 
         const options: RazorpayOptions = {
@@ -80,19 +84,20 @@ export function useRazorpay() {
           description: "Numerology Reading - Full Report",
           order_id: data.order_id,
           handler: async (response) => {
-            // Verify payment
-            const { error: verifyError } = await supabase.functions.invoke(
-              "verify-razorpay-payment",
-              {
-                body: {
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                },
-              }
-            );
+            // Verify payment via Vercel API
+            const verifyRes = await fetch("/api/verify-razorpay-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
 
-            if (verifyError) {
+            const verifyData = await verifyRes.json();
+
+            if (!verifyRes.ok || !verifyData.verified) {
               onError("Payment verification failed. Please contact support.");
               return;
             }
@@ -103,7 +108,7 @@ export function useRazorpay() {
             name: customerName,
           },
           theme: {
-            color: "#6b21a8",
+            color: "#EAB308",
           },
         };
 

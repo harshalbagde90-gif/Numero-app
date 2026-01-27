@@ -111,7 +111,7 @@ const Blog = () => {
                                     {/* Professional Image Box (50%) */}
                                     <div className="w-full lg:w-1/2 aspect-[16/10] overflow-hidden relative rounded-2xl md:rounded-3xl border border-white/5 shadow-2xl">
                                         <img
-                                            src={encodeURI(post.image)}
+                                            src={post.image.startsWith('http') || post.image.startsWith('/') ? encodeURI(post.image) : `/${encodeURI(post.image)}`}
                                             alt={post.title}
                                             className="w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-105"
                                             onError={(e) => {

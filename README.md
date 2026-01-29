@@ -56,3 +56,13 @@ npm install
 
 # 4. Launch the cosmic engine
 npm run dev
+```
+
+---
+
+## 🌐 Official Links
+- **Website:** [numguru.online](https://numguru.online)
+- **Inquiries:** Contact Harsh Bagde for professional collaborations.
+
+---
+*© 2026 NumGuru. All Rights Reserved. Built with mystic vibrations and modern code.*

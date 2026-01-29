@@ -88,9 +88,14 @@ export function Footer() {
 
                 {/* Bottom Bar */}
                 <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
-                    <p className="text-slate-500 text-xs tracking-wide">
-                        © {new Date().getFullYear()} <span className="text-slate-400 font-bold">NumGuru</span>. All cosmic rights reserved.
-                    </p>
+                    <div className="flex flex-col gap-1">
+                        <p className="text-slate-500 text-xs tracking-wide">
+                            © {new Date().getFullYear()} <span className="text-slate-400 font-bold">NumGuru</span>. All cosmic rights reserved.
+                        </p>
+                        <p className="text-[10px] text-slate-600 font-medium">
+                            Developed with precision by <span className="text-secondary/70 font-semibold tracking-wide">Harsh Bagde</span> <span className="opacity-50 text-[9px] uppercase tracking-tighter ml-1">(CSE Graduate)</span>
+                        </p>
+                    </div>
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/5 border border-emerald-500/20 shadow-inner">
                             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />

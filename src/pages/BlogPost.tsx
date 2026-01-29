@@ -56,6 +56,41 @@ const BlogPost = () => {
                         document.head.appendChild(canonicalLink);
                     }
                     canonicalLink.setAttribute('href', `https://numguru.online/blog/${slug}`);
+
+                    // JSON-LD Structured Data for Google Indexing
+                    const jsonLd = {
+                        "@context": "https://schema.org",
+                        "@type": "BlogPosting",
+                        "headline": foundPost.title,
+                        "description": foundPost.excerpt,
+                        "image": `https://numguru.online${foundPost.image.startsWith('/') ? '' : '/'}${foundPost.image}`,
+                        "author": {
+                            "@type": "Organization",
+                            "name": "NumGuru"
+                        },
+                        "publisher": {
+                            "@type": "Organization",
+                            "name": "NumGuru",
+                            "logo": {
+                                "@type": "ImageObject",
+                                "url": "https://numguru.online/logo.png"
+                            }
+                        },
+                        "datePublished": foundPost.date ? new Date(foundPost.date).toISOString().split('T')[0] : "2026-01-27",
+                        "mainEntityOfPage": {
+                            "@type": "WebPage",
+                            "@id": `https://numguru.online/blog/${slug}`
+                        }
+                    };
+
+                    let script = document.querySelector('#blog-json-ld') as HTMLScriptElement;
+                    if (!script) {
+                        script = document.createElement('script') as HTMLScriptElement;
+                        script.id = 'blog-json-ld';
+                        script.type = 'application/ld+json';
+                        document.head.appendChild(script);
+                    }
+                    script.textContent = JSON.stringify(jsonLd);
                 } else {
                     console.error("Post not found in folder for slug:", slug);
                     navigate("/blog");

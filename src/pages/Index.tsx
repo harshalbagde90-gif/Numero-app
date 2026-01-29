@@ -67,6 +67,21 @@ const Index = () => {
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
 
+  const [latestPosts, setLatestPosts] = useState<any[]>([]);
+
+  useEffect(() => {
+    try {
+      const postModules = import.meta.glob("/src/content/blogs/*.json", { eager: true });
+      const posts = Object.values(postModules)
+        .map((module: any) => module.default || module)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 3);
+      setLatestPosts(posts);
+    } catch (error) {
+      console.error("Error loading latest posts:", error);
+    }
+  }, []);
+
   const scrollToTop = () => {
     const topElement = document.getElementById("top");
     if (topElement) {
@@ -1748,6 +1763,63 @@ const Index = () => {
                       </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="py-24 relative overflow-hidden bg-[#0d000d]">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+              <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
+                <div className="text-left">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-[0.3em] mb-6">
+                    Ancient Wisdom
+                  </div>
+                  <h2 className="text-4xl md:text-5xl font-sans font-black text-white tracking-tight leading-tight">
+                    Cosmic <span className="text-secondary italic">Insights</span>
+                  </h2>
+                </div>
+                <Link
+                  to="/blog"
+                  className="group flex items-center gap-3 text-white/50 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.2em]"
+                >
+                  Explore Full Library
+                  <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {latestPosts.map((post, i) => (
+                  <Link
+                    key={i}
+                    to={`/blog/${post.slug}`}
+                    className="group relative overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.02] transition-all duration-500 hover:border-secondary/30 hover:bg-white/[0.05]"
+                  >
+                    <div className="aspect-[16/10] overflow-hidden grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700">
+                      <img
+                        src={post.image.startsWith('http') || post.image.startsWith('/') ? post.image : `/${post.image}`}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800";
+                        }}
+                      />
+                    </div>
+                    <div className="p-8">
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60 mb-4 block">{post.category}</span>
+                      <h3 className="text-xl font-bold text-white mb-4 group-hover:text-secondary transition-colors line-clamp-2 leading-snug">
+                        {post.title}
+                      </h3>
+                      <p className="text-slate-400 text-sm line-clamp-2 leading-relaxed mb-6 font-medium">
+                        {post.excerpt}
+                      </p>
+                      <div className="flex items-center gap-2 text-white/40 text-[9px] font-black uppercase tracking-widest group-hover:text-white transition-colors">
+                        Read Investigation
+                        <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+                  </Link>
                 ))}
               </div>
             </div>

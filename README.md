@@ -1,73 +1,58 @@
-# Welcome to your Lovable project
+# 🌌 NumGuru - Premium Numerology Analysis Portal
 
-## Project info
+**NumGuru** is a sophisticated, high-end numerology application designed to provide deep cosmic insights through Pythagorean numerology. Featuring a premium dark-themed UI and seamless user experience, it translates complex vibrational patterns into actionable life guidance.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## 👨‍💻 Developed By
+**Harsh Bagde**  
+*Computer Science Graduate & Full Stack Developer*
 
-There are several ways of editing your application.
+With over **3-4 years of professional experience** in:
+- **Web Development:** Specialist in React, TypeScript, and modern styling architectures.
+- **AI Automation:** Implementing intelligent logic for personalized user reports.
+- **Social Media Management:** Understanding user engagement to build intuitive digital products.
+- **Technical Strategy:** Bridging the gap between code and high-end aesthetics.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## ✨ Key Features
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Cosmic Blueprint:** Comprehensive life path analysis based on Pythagorean principles.
+- **The Learning Hub:** An interactive guide to understanding numerology numbers and their meanings.
+- **Color Alchemy:** Personalized color guidance to align with your unique vibration.
+- **Sacred Remedies:** Curated suggestions for spiritual and professional growth.
+- **Dynamic Sharing:** Generate personalized report links with optimized meta-data for social sharing.
+- **Multi-Currency Support:** Seamless global integration for premium report unlocking.
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🚀 Technical Excellence
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+This project is built using modern, production-grade technologies to ensure speed, security, and scalability:
 
-Follow these steps:
+- **Frontend Core:** [React](https://reactjs.org/) + [Vite](https://vitejs.dev/)
+- **Programming Language:** [TypeScript](https://www.typescriptlang.org/) (Strictly typed for reliability)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/) + [Framer Motion](https://www.framer.com/motion/) for premium animations.
+- **UI Components:** [shadcn/ui](https://ui.shadcn.com/) (Custom themed for brand identity)
+- **State Management:** React Hooks & Persistence API for seamless session restoration.
+- **Analytics & SEO:** Integrated Google Tag Manager and SEO-optimized Meta tagging.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+---
+
+## 🛠️ Local Development
+
+To run this project locally, ensure you have **Node.js** installed.
+
+```bash
+# 1. Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# 2. Navigate to project directory
+cd Numero-app
 
-# Step 3: Install the necessary dependencies.
-npm i
+# 3. Install premium dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 4. Launch the cosmic engine
 npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)

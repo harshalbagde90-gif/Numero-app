@@ -47,6 +47,15 @@ const BlogPost = () => {
                         document.head.appendChild(metaDesc);
                     }
                     metaDesc.setAttribute('content', foundPost.excerpt || "Discover numerology insights on NumGuru.");
+
+                    // Add Canonical Link
+                    let canonicalLink = document.querySelector('link[rel="canonical"]');
+                    if (!canonicalLink) {
+                        canonicalLink = document.createElement('link');
+                        canonicalLink.setAttribute('rel', 'canonical');
+                        document.head.appendChild(canonicalLink);
+                    }
+                    canonicalLink.setAttribute('href', `https://numguru.online/blog/${slug}`);
                 } else {
                     console.error("Post not found in folder for slug:", slug);
                     navigate("/blog");

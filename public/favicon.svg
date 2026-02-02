@@ -1,0 +1,29 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 1080 1080">
+  <style>
+    @keyframes smooth-rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .rotating-logo {
+      transform-origin: center;
+      animation: smooth-rotate 5s linear infinite;
+    }
+  </style>
+
+  <!-- Circular Outer Border -->
+  <circle cx="540" cy="540" r="520" stroke="#EAB308" stroke-width="30" fill="none" />
+
+  <g class="rotating-logo">
+    <!-- Center Orbit Icon Path (Extracted from your SVG content) -->
+    <path d="M540 380 a160 160 0 1 0 0.0001 0" fill="none" stroke="#EAB308" stroke-width="40" stroke-linecap="round" />
+    <circle cx="540" cy="540" r="50" fill="#EAB308" />
+    
+    <!-- Orbital path bits -->
+    <path d="M540 280 A260 260 0 1 1 280 540" stroke="#EAB308" stroke-width="35" fill="none" stroke-linecap="round" />
+    <path d="M540 800 A260 260 0 1 1 800 540" stroke="#EAB308" stroke-width="35" fill="none" stroke-linecap="round" />
+    
+    <!-- Strategic Nodes -->
+    <circle cx="800" cy="540" r="45" fill="#EAB308" />
+    <circle cx="280" cy="540" r="45" fill="#EAB308" />
+  </g>
+</svg>

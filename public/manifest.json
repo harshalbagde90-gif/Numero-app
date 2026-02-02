@@ -1,0 +1,17 @@
+{
+    "name": "NumGuru",
+    "short_name": "NumGuru",
+    "description": "Discover Your Life Purpose Through Pythagorean Numerology",
+    "icons": [
+        {
+            "src": "/numguru-logo.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        }
+    ],
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#020202",
+    "theme_color": "#EAB308"
+}

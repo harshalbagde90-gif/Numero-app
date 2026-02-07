@@ -8,8 +8,13 @@ export default async function handler(req, res) {
         const keyId = process.env.RAZORPAY_KEY_ID;
         const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
+        if (!amount || isNaN(amount)) {
+            return res.status(400).json({ error: 'Valid amount is required' });
+        }
+
         if (!keyId || !keySecret) {
-            return res.status(500).json({ error: 'Razorpay keys not configured in Vercel' });
+            console.error('Razorpay keys missing in environment');
+            return res.status(500).json({ error: 'Razorpay keys not configured' });
         }
 
         const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');

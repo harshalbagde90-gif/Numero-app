@@ -810,16 +810,16 @@ export function ResultPreview({
                   </div>
                 </div>
 
-                {/* Growth Numbers Rectangle */}
+                {/* Challenging Numbers Rectangle */}
                 <div className="group relative overflow-hidden rounded-[2rem] bg-[#050505] p-8 border border-amber-500/30 transition-all duration-700 hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]">
                   <div className="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all" />
                   <div className="flex items-center gap-4 mb-6">
                     <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                      <Sprout className="h-6 w-6 text-amber-400" />
+                      <Zap className="h-6 w-6 text-amber-400" />
                     </div>
                     <div>
-                      <h4 translate="yes" className="font-serif text-xl text-white tracking-wide">Growth Numbers</h4>
-                      <p translate="yes" className="text-[10px] text-amber-500 font-black uppercase tracking-widest opacity-80">Catalyst Frequencies</p>
+                      <h4 translate="yes" className="font-serif text-xl text-white tracking-wide">Challenging Numbers</h4>
+                      <p translate="yes" className="text-[10px] text-amber-500 font-black uppercase tracking-widest opacity-80">Evolutionary Triggers</p>
                     </div>
                   </div>
                   <p translate="yes" className="text-sm text-slate-300 leading-relaxed mb-8 font-medium italic opacity-85">

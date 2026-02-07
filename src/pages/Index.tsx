@@ -317,7 +317,8 @@ const Index = () => {
 
     setIsLoading(true);
     initiatePayment(
-      PRICE,
+      amount,
+      currency,
       reading.name,
       () => {
         setIsUnlocked(true);
@@ -483,27 +484,29 @@ const Index = () => {
                       {freeReport?.premiumModules.map((module, idx) => (
                         <div
                           key={idx}
-                          className="group relative overflow-hidden rounded-[1.5rem] border border-white/5 bg-[#030303] p-5 pt-8 md:p-6 transition-all duration-500 hover:border-secondary/30 shadow-xl"
+                          className="group relative overflow-hidden rounded-[1.5rem] border border-white/5 bg-[#030303] p-5 md:p-6 transition-all duration-500 hover:border-secondary/30 shadow-xl"
                         >
-                          {/* Floating Icon for Mobile */}
-                          <div className="absolute -top-6 md:-top-7 left-5 p-3 rounded-2xl bg-[#0d000d] border border-secondary/20 shadow-2xl group-hover:scale-110 group-hover:bg-secondary/10 transition-all duration-500">
-                            <span className="material-icons-round text-secondary text-xl font-bold">{module.icon}</span>
-                          </div>
-
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-center justify-between">
-                              <h4 className="text-[15px] font-black text-white uppercase tracking-wider">{module.title}</h4>
-                              <Lock className="h-3.5 w-3.5 text-secondary/40 shrink-0" />
+                          <div className="flex items-start gap-4 md:gap-5">
+                            {/* Unified Icon Container */}
+                            <div className="shrink-0 w-11 h-11 md:w-12 md:h-12 flex items-center justify-center rounded-xl bg-[#0d000d] border border-secondary/20 shadow-2xl group-hover:scale-110 group-hover:bg-secondary/10 transition-all duration-500">
+                              <span className="material-icons-round text-secondary text-xl leading-none flex items-center justify-center w-full h-full select-none">{module.icon}</span>
                             </div>
 
-                            <div className="relative">
-                              <p className="text-[11px] leading-relaxed text-white/40 select-none italic blur-[1.2px]">
-                                {module.description}
-                              </p>
-                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                                <span className="text-[7px] font-black uppercase tracking-[0.2em] text-secondary bg-black/80 px-2 py-1 rounded-full border border-secondary/20">
-                                  Premium Content
-                                </span>
+                            <div className="flex flex-col gap-1.5 flex-grow">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-[14px] md:text-[15px] font-black text-white uppercase tracking-wider">{module.title}</h4>
+                                <Lock className="h-3.5 w-3.5 text-secondary/40 shrink-0" />
+                              </div>
+
+                              <div className="relative">
+                                <p className="text-[11px] leading-relaxed text-white/40 select-none italic blur-[1.2px]">
+                                  {module.description}
+                                </p>
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                  <span className="text-[7px] font-black uppercase tracking-[0.2em] text-secondary bg-black/80 px-2 py-1 rounded-full border border-secondary/20">
+                                    Premium Content
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -607,7 +610,7 @@ const Index = () => {
                             </div>
                           </div>
 
-                          {/* Growth Triggers Teaser */}
+                          {/* Challenging Triggers Teaser */}
                           <div className="space-y-3">
                             <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest pl-1">{freeReport?.numberTeasers.growthTitle}</span>
                             <div className="flex flex-wrap gap-2">
@@ -762,7 +765,7 @@ const Index = () => {
                   type="button"
                 >
                   <Crown className="mr-2 h-4 w-4 sm:h-5 sm:w-5 fill-current transition-transform duration-500 group-hover/btn:rotate-12" />
-                  Upgrade to Premium — ₹49
+                  Upgrade to Premium — {symbol}{amount}
                 </Button>
               </div>
             </div>
@@ -1602,7 +1605,7 @@ const Index = () => {
                     <span className="flex items-center gap-2"><Lock className="h-3 w-3" /> Secure Payment</span>
                     <span className="flex items-center gap-2"><Crown className="h-3 w-3" /> Lifetime Access</span>
                     <span className="hidden md:block h-1 w-1 bg-slate-700 rounded-full" />
-                    <span className="text-white">One-Time Payment: ₹49 Only</span>
+                    <span className="text-white">One-Time Payment: {symbol}{amount} Only</span>
                   </div>
                 </div>
               </div>

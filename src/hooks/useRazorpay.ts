@@ -70,11 +70,19 @@ export function useRazorpay() {
           body: JSON.stringify({ amount, currency }),
         });
 
-        const data = await response.json();
-
-        if (!response.ok || !data?.order_id) {
-          throw new Error(data?.error || "Failed to create order");
+        if (!response.ok) {
+          const errorText = await response.text();
+          let errorMessage = "Failed to create order";
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.error || errorMessage;
+          } catch (e) {
+            errorMessage = `${response.status}: ${errorText.slice(0, 50)}...`;
+          }
+          throw new Error(errorMessage);
         }
+
+        const data = await response.json();
 
         const options: RazorpayOptions = {
           key: data.key_id,

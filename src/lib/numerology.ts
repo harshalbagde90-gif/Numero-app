@@ -1401,8 +1401,8 @@ export function generateFreeReportFromDob(dob: Date): FreeNumerologyReport {
     },
     numberTeasers: {
       friendlyTitle: "Friendly Numbers",
-      growthTitle: "Growth Numbers",
-      description: "You are not an island. Certain numeric vibrations act as keys to unlock your path, while others create invisible resistance. Knowing your 'Friendly Allies' and 'Growth Triggers' is the difference between swimming against the tide and riding the cosmic wave of success."
+      growthTitle: "Challenging Numbers",
+      description: "You are not an island. Certain numeric vibrations act as keys to unlock your path, while others create invisible resistance. Knowing your 'Friendly Allies' and 'Challenging Triggers' is the difference between swimming against the tide and riding the cosmic wave of success."
     },
     remedies: (function () {
       const key = lp > 9 ? String(reduceToSingleDigit(lp)) : String(lp);

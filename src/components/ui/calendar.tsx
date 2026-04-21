@@ -7,6 +7,148 @@ import { buttonVariants } from "@/components/ui/button";
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
+function CalendarDropdown({ name, ...props }: DropdownProps) {
+  const isMonth = name === "months";
+  const [isOpen, setIsOpen] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const ignoreClickRef = React.useRef(false);
+  const ignoreClickTimeoutRef = React.useRef<number | null>(null);
+  const pointerStartYRef = React.useRef<number | null>(null);
+
+  const options = React.Children.toArray(props.children) as React.ReactElement[];
+  const selectedOption = options.find((opt) => opt.props.value === props.value);
+  const selectedLabel = selectedOption?.props.children ?? (isMonth ? "Month" : "Year");
+
+  React.useEffect(() => {
+    return () => {
+      if (ignoreClickTimeoutRef.current) {
+        window.clearTimeout(ignoreClickTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const markIgnoreClicks = React.useCallback(() => {
+    ignoreClickRef.current = true;
+    if (ignoreClickTimeoutRef.current) {
+      window.clearTimeout(ignoreClickTimeoutRef.current);
+    }
+    ignoreClickTimeoutRef.current = window.setTimeout(() => {
+      ignoreClickRef.current = false;
+    }, 180);
+  }, []);
+
+  // Auto-scroll to selected year when opened.
+  React.useEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      const scrollContainer = dropdownRef.current.querySelector(".max-h-\\[200px\\]");
+      const selectedBtn = scrollContainer?.querySelector(".bg-secondary\\/20, .bg-secondary");
+      if (selectedBtn && scrollContainer) {
+        (scrollContainer as HTMLElement).scrollTop = (selectedBtn as HTMLElement).offsetTop - 10;
+      } else if (!isMonth && scrollContainer) {
+        const years = Array.from(scrollContainer.querySelectorAll("button"));
+        const year2000Btn = years.find((button) => button.textContent?.trim() === "2000");
+        if (year2000Btn) {
+          (scrollContainer as HTMLElement).scrollTop = (year2000Btn as HTMLElement).offsetTop - 10;
+        }
+      }
+    }
+  }, [isOpen, isMonth]);
+
+  return (
+    <div className="flex flex-col w-full gap-1.5 relative" ref={dropdownRef}>
+      <span className="text-[10px] font-black text-secondary/70 uppercase tracking-[0.15em] pl-1">
+        {isMonth ? "Month" : "Year"}
+      </span>
+
+      <button
+        className="h-10 w-full rounded-xl border border-secondary/30 bg-[#1a1235] px-4 pr-10 text-xs font-bold text-white shadow-lg transition-all hover:border-secondary/60 hover:bg-[#251b4a] flex items-center justify-between text-left relative group/btn overflow-hidden"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        type="button"
+      >
+        <span className="truncate">{selectedLabel}</span>
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary transition-all duration-300 group-hover/btn:scale-110 drop-shadow-[0_0_8px_rgba(234,179,8,0.6)]">
+          <span className="material-icons-round text-lg leading-none">
+            {isOpen ? "expand_less" : "expand_more"}
+          </span>
+        </div>
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-[100%] left-0 w-full mt-2 bg-[#0a0518] border border-secondary/30 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div
+            className="max-h-[200px] overflow-y-auto py-1 custom-scrollbar-premium touch-pan-y overscroll-contain"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              pointerStartYRef.current = e.clientY;
+            }}
+            onPointerMove={(e) => {
+              e.stopPropagation();
+              const startY = pointerStartYRef.current;
+              if (typeof startY === "number" && Math.abs(e.clientY - startY) > 6) {
+                markIgnoreClicks();
+              }
+            }}
+            onPointerUp={() => {
+              pointerStartYRef.current = null;
+              if (ignoreClickTimeoutRef.current) {
+                window.clearTimeout(ignoreClickTimeoutRef.current);
+              }
+              ignoreClickTimeoutRef.current = window.setTimeout(() => {
+                ignoreClickRef.current = false;
+              }, 60);
+            }}
+            onPointerCancel={() => {
+              pointerStartYRef.current = null;
+              if (ignoreClickTimeoutRef.current) {
+                window.clearTimeout(ignoreClickTimeoutRef.current);
+              }
+              ignoreClickRef.current = false;
+            }}
+          >
+            {options.map((opt) => {
+              const isSelected = opt.props.value === props.value;
+              return (
+                <button
+                  key={opt.props.value}
+                  className={cn(
+                    "w-full px-4 py-2.5 text-left text-xs font-bold transition-all flex items-center justify-between group/opt",
+                    isSelected
+                      ? "bg-secondary text-secondary-foreground border-l-2 border-secondary"
+                      : "text-white/70 hover:bg-secondary/10 hover:text-white"
+                  )}
+                  onClick={() => {
+                    if (ignoreClickRef.current) {
+                      ignoreClickRef.current = false;
+                      return;
+                    }
+                    if (props.onChange) {
+                      const event = {
+                        target: { value: opt.props.value },
+                      } as React.ChangeEvent<HTMLSelectElement>;
+                      props.onChange(event);
+                    }
+                    setIsOpen(false);
+                  }}
+                  type="button"
+                >
+                  <span>{opt.props.children}</span>
+                  {isSelected && <Check className="h-3 w-3 text-secondary-foreground" />}
+                  {!isSelected && <div className="h-1 w-1 rounded-full bg-secondary/0 group-hover/opt:bg-secondary/40 transition-all font-normal" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
   return (
     <div className="flex flex-col bg-[#0a0518]/95 backdrop-blur-xl border border-secondary/20 rounded-2xl shadow-2xl p-4 min-w-[280px]">
@@ -59,98 +201,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         components={{
           IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
           IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
-          Dropdown: ({ name, ...props }: DropdownProps) => {
-            const isMonth = name === "months";
-            const [isOpen, setIsOpen] = React.useState(false);
-            const dropdownRef = React.useRef<HTMLDivElement>(null);
-
-            const options = React.Children.toArray(props.children) as React.ReactElement[];
-            const selectedOption = options.find((opt) => opt.props.value === props.value);
-            const selectedLabel = selectedOption?.props.children ?? (isMonth ? "Month" : "Year");
-
-            React.useEffect(() => {
-              const handleClickOutside = (event: MouseEvent) => {
-                if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                  setIsOpen(false);
-                }
-              };
-              document.addEventListener("mousedown", handleClickOutside);
-              return () => document.removeEventListener("mousedown", handleClickOutside);
-            }, []);
-
-            // Auto-scroll to selected year when opened
-            React.useEffect(() => {
-              if (isOpen && dropdownRef.current) {
-                const scrollContainer = dropdownRef.current.querySelector(".max-h-\\[200px\\]");
-                const selectedBtn = scrollContainer?.querySelector(".bg-secondary\\/20, .bg-secondary");
-                if (selectedBtn && scrollContainer) {
-                  (scrollContainer as HTMLElement).scrollTop = (selectedBtn as HTMLElement).offsetTop - 10;
-                } else if (!isMonth && scrollContainer) {
-                  const years = Array.from(scrollContainer.querySelectorAll("button"));
-                  const year2000Btn = years.find(b => b.textContent?.trim() === "2000");
-                  if (year2000Btn) {
-                    (scrollContainer as HTMLElement).scrollTop = (year2000Btn as HTMLElement).offsetTop - 10;
-                  }
-                }
-              }
-            }, [isOpen, isMonth]);
-
-            return (
-              <div className="flex flex-col w-full gap-1.5 relative" ref={dropdownRef}>
-                <span className="text-[10px] font-black text-secondary/70 uppercase tracking-[0.15em] pl-1">
-                  {isMonth ? "Month" : "Year"}
-                </span>
-
-                <button
-                  className="h-10 w-full rounded-xl border border-secondary/30 bg-[#1a1235] px-4 pr-10 text-xs font-bold text-white shadow-lg transition-all hover:border-secondary/60 hover:bg-[#251b4a] flex items-center justify-between text-left relative group/btn overflow-hidden"
-                  onClick={() => setIsOpen(!isOpen)}
-                  type="button"
-                >
-                  <span className="truncate">{selectedLabel}</span>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary transition-all duration-300 group-hover/btn:scale-110 drop-shadow-[0_0_8px_rgba(234,179,8,0.6)]">
-                    <span className="material-icons-round text-lg leading-none">
-                      {isOpen ? "expand_less" : "expand_more"}
-                    </span>
-                  </div>
-                </button>
-
-                {isOpen && (
-                  <div className="absolute top-[100%] left-0 w-full mt-2 bg-[#0a0518] border border-secondary/30 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                    <div className="max-h-[200px] overflow-y-auto py-1 custom-scrollbar-premium">
-                      {options.map((opt) => {
-                        const isSelected = opt.props.value === props.value;
-                        return (
-                          <button
-                            key={opt.props.value}
-                            className={cn(
-                              "w-full px-4 py-2.5 text-left text-xs font-bold transition-all flex items-center justify-between group/opt",
-                              isSelected
-                                ? "bg-secondary text-secondary-foreground border-l-2 border-secondary"
-                                : "text-white/70 hover:bg-secondary/10 hover:text-white"
-                            )}
-                            onClick={() => {
-                              if (props.onChange) {
-                                const event = {
-                                  target: { value: opt.props.value },
-                                } as React.ChangeEvent<HTMLSelectElement>;
-                                props.onChange(event);
-                              }
-                              setIsOpen(false);
-                            }}
-                            type="button"
-                          >
-                            <span>{opt.props.children}</span>
-                            {isSelected && <Check className="h-3 w-3 text-secondary-foreground" />}
-                            {!isSelected && <div className="h-1 w-1 rounded-full bg-secondary/0 group-hover/opt:bg-secondary/40 transition-all font-normal" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          }
+          Dropdown: CalendarDropdown,
         }}
         {...props}
       />

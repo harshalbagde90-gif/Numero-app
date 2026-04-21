@@ -974,11 +974,12 @@ const Index = () => {
                           <CalendarIcon className="h-4 w-4" />
                         </button>
                         <PopoverContent
-                          className="w-auto p-0 border-none bg-transparent shadow-none animate-in fade-in zoom-in-95 duration-300 z-[100]"
+                          className="w-auto p-0 border-none bg-transparent shadow-none animate-in fade-in zoom-in-95 duration-300 z-[100] max-h-[calc(100vh-140px)] overflow-auto overscroll-contain"
                           align="center"
-                          side="top"
-                          sideOffset={-100}
-                          avoidCollisions={false}
+                          side="bottom"
+                          sideOffset={8}
+                          onInteractOutside={(e) => e.preventDefault()}
+                          onPointerDownOutside={(e) => e.preventDefault()}
                         >
                           <Calendar
                             captionLayout="dropdown"
@@ -1080,11 +1081,12 @@ const Index = () => {
                             <CalendarIcon className="h-4 w-4" />
                           </button>
                           <PopoverContent
-                            className="w-auto p-0 border-none bg-transparent shadow-none animate-in fade-in zoom-in-95 duration-300 z-[100]"
+                            className="w-auto p-0 border-none bg-transparent shadow-none animate-in fade-in zoom-in-95 duration-300 z-[100] max-h-[calc(100vh-140px)] overflow-auto overscroll-contain"
                             align="center"
-                            side="top"
-                            sideOffset={-280}
-                            avoidCollisions={false}
+                            side="bottom"
+                            sideOffset={8}
+                            onInteractOutside={(e) => e.preventDefault()}
+                            onPointerDownOutside={(e) => e.preventDefault()}
                           >
                             <Calendar
                               captionLayout="dropdown"

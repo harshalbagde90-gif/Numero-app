@@ -59,6 +59,11 @@ const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
       setCanScrollNext(api.canScrollNext());
     }, []);
 
+    // If loop is enabled, both directions are always scrollable
+    const isLooping = opts?.loop === true;
+    const effectiveCanScrollPrev = isLooping || canScrollPrev;
+    const effectiveCanScrollNext = isLooping || canScrollNext;
+
     const scrollPrev = React.useCallback(() => {
       api?.scrollPrev();
     }, [api]);
@@ -111,8 +116,8 @@ const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
           orientation: orientation || (opts?.axis === "y" ? "vertical" : "horizontal"),
           scrollPrev,
           scrollNext,
-          canScrollPrev,
-          canScrollNext,
+          canScrollPrev: effectiveCanScrollPrev,
+          canScrollNext: effectiveCanScrollNext,
         }}
       >
         <div

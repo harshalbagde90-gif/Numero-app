@@ -47,6 +47,7 @@ import {
   CarouselNext,
   type CarouselApi,
 } from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -74,8 +75,7 @@ const Index = () => {
       const postModules = import.meta.glob("/src/content/blogs/*.json", { eager: true });
       const posts = Object.values(postModules)
         .map((module: any) => module.default || module)
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 3);
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setLatestPosts(posts);
     } catch (error) {
       console.error("Error loading latest posts:", error);
@@ -189,6 +189,45 @@ const Index = () => {
 
   const today = useMemo(() => new Date(), []);
   const minDob = useMemo(() => new Date(1900, 0, 1), []);
+
+  const [isBrowseOpen, setIsBrowseOpen] = useState(false);
+
+  const sections = [
+    { id: "top", label: "Home", icon: Moon },
+    { id: "insights", label: "Cosmic Insights", icon: Orbit },
+    { id: "samples", label: "Free Sample", icon: Sparkles },
+    { id: "premium-form-container", label: "Personal Audit", icon: Fingerprint },
+    { id: "remedies", label: "Sacred Remedies", icon: Sparkles },
+    { id: "what-is-numerology", label: "The Science", icon: BookOpen },
+    { id: "how-it-works", label: "How It Works", icon: Activity },
+    { id: "testimonials", label: "Soul Reviews", icon: Star },
+    { id: "cta", label: "Final Reveal", icon: Crown },
+  ];
+
+  const scrollToSection = (id: string) => {
+    if (id === "top") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      setIsBrowseOpen(false);
+      return;
+    }
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+      setIsBrowseOpen(false);
+    }
+  };
+
+  // Lock body scroll when Browse is open
+  useEffect(() => {
+    if (isBrowseOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isBrowseOpen]);
 
   useEffect(() => {
     // Enforce Dark Mode Only
@@ -342,7 +381,97 @@ const Index = () => {
 
   if (state === "landing" || !reading) {
     return (
-      <div id="top" className="bg-background text-foreground transition-colors duration-300 min-h-screen flex flex-col">
+      <div className="bg-background text-foreground transition-colors duration-300 min-h-screen flex flex-col">
+        {/* Vertical Browse Button */}
+        <button
+          onClick={() => setIsBrowseOpen(true)}
+          className="hidden lg:flex fixed right-0 top-1/2 -translate-y-1/2 z-[60] bg-[#0d000d]/90 backdrop-blur-xl border-l border-y border-secondary/40 py-8 px-2.5 rounded-l-[2rem] group transition-all duration-500 hover:bg-[#1a001a] hover:border-secondary hover:px-4 shadow-[0_0_30px_rgba(234,179,8,0.2)] active:scale-95 flex-col items-center gap-6"
+        >
+          <div className="flex flex-col gap-1.5 items-center">
+            {"BROWSE".split("").map((char, i) => (
+              <span key={i} className="text-[12px] font-black text-secondary/70 group-hover:text-secondary transition-colors leading-none tracking-tighter">
+                {char}
+              </span>
+            ))}
+          </div>
+          <div className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse shadow-[0_0_10px_rgba(234,179,8,0.8)]" />
+        </button>
+
+        {/* Mobile Bottom Navigation Bar */}
+        <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-4 w-[90vw] max-w-[400px]">
+          <button
+            onClick={() => setIsBrowseOpen(true)}
+            className="flex-1 flex items-center justify-center gap-3 bg-[#0d000d]/90 backdrop-blur-xl border border-secondary/40 py-4 px-6 rounded-2xl text-secondary text-sm font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(0,0,0,0.5)] active:scale-95 transition-all"
+          >
+            <Compass className="h-5 w-5" />
+            Browse
+          </button>
+          <Link
+            to="/blog"
+            className="flex-1 flex items-center justify-center gap-3 bg-gradient-to-br from-amber-300 to-amber-600 py-4 px-6 rounded-2xl text-black text-sm font-black uppercase tracking-widest shadow-[0_10px_30px_rgba(234,179,8,0.3)] active:scale-95 transition-all"
+          >
+            <Orbit className="h-5 w-5" />
+            Blogs
+          </Link>
+        </div>
+
+        {/* Browse Navigation Overlay */}
+        <div 
+          className={`fixed inset-0 z-[70] transition-all duration-500 ${isBrowseOpen ? "visible opacity-100" : "invisible opacity-0"}`}
+        >
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            onClick={() => setIsBrowseOpen(false)}
+          />
+          
+          <div 
+              className={`absolute lg:right-0 lg:left-auto lg:inset-y-0 lg:w-full lg:max-w-[340px] inset-x-4 bottom-24 lg:bottom-auto lg:top-0 h-auto max-h-[85vh] lg:max-h-none lg:h-full bg-[#020202] lg:border-l border border-white/5 lg:border-none shadow-2xl transition-all duration-500 ease-out p-6 lg:p-8 flex flex-col rounded-3xl lg:rounded-none ${
+                isBrowseOpen 
+                  ? "translate-y-0 opacity-100 lg:translate-x-0" 
+                  : "translate-y-10 opacity-0 lg:translate-y-0 lg:opacity-100 lg:translate-x-full"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-8 shrink-0">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary">Navigation</span>
+                  <h3 className="text-xl lg:text-2xl font-serif font-black text-white tracking-tighter">Explore Index</h3>
+                </div>
+                <button 
+                  onClick={() => setIsBrowseOpen(false)}
+                  className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-3 overflow-y-auto pr-2 custom-scrollbar scroll-smooth flex-grow pb-4">
+              {sections.map((section, idx) => (
+                <button
+                  key={section.id}
+                  onClick={() => scrollToSection(section.id)}
+                  className="group flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-secondary/40 hover:bg-secondary/5 transition-all duration-300 text-left shrink-0"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/20 group-hover:bg-secondary/10 group-hover:border-secondary/20 group-hover:text-secondary transition-all">
+                    <section.icon className="h-5 w-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 group-hover:text-secondary/60 transition-colors">Section {idx + 1}</span>
+                    <span className="text-sm font-bold text-white/60 group-hover:text-white transition-colors">{section.label}</span>
+                  </div>
+                  <ChevronRight className="h-4 w-4 ml-auto text-white/5 group-hover:text-secondary/40 transition-all group-hover:translate-x-1" />
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-auto pt-8 border-t border-white/5">
+              <div className="flex items-center gap-4 text-white/20">
+                <Orbit className="h-5 w-5 animate-spin-slow" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Aligned with the cosmos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <Dialog open={isSampleResultOpen} onOpenChange={setIsSampleResultOpen}>
           <DialogContent className="w-[95vw] max-w-3xl p-0 border-none bg-transparent shadow-none sm:overflow-hidden overflow-hidden flex flex-col max-h-[90vh]">
             {/* Outer Static Framework - Border & Glow stay here */}
@@ -1133,6 +1262,101 @@ const Index = () => {
             </div>
           </section>
 
+          <section className="py-24 relative overflow-hidden bg-[#0d000d]" id="insights">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+              <div className="flex flex-col items-center justify-center mb-16 gap-6 text-center">
+                <div className="flex flex-col items-center">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-[0.3em] mb-6">
+                    Ancient Wisdom
+                  </div>
+                  <h2 className="text-4xl md:text-5xl font-sans font-black text-white tracking-tight leading-tight">
+                    Cosmic <span className="text-secondary italic">Insights</span>
+                  </h2>
+                </div>
+              </div>
+
+              <Carousel
+                opts={{
+                  align: "start",
+                  loop: true,
+                  dragFree: false,
+                }}
+                plugins={[
+                  Autoplay({
+                    delay: 4000,
+                    stopOnInteraction: false,
+                    stopOnMouseEnter: false,
+                  }),
+                ]}
+                className="w-full relative px-2 md:px-14"
+              >
+                <CarouselContent className="py-4 -ml-4">
+                  {latestPosts.map((post, i) => (
+                    <CarouselItem key={i} className="pl-4 md:basis-1/3 sm:basis-1/2 basis-full">
+                      <Link
+                        to={`/blog/${post.slug}`}
+                        className="group relative overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.02] transition-all duration-500 hover:border-secondary/30 hover:bg-white/[0.05] flex flex-col h-full"
+                      >
+                        <div className="aspect-[16/10] overflow-hidden grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700 shrink-0">
+                          <img
+                            src={post.image.startsWith('http') || post.image.startsWith('/') ? post.image : `/${post.image}`}
+                            alt={post.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800";
+                            }}
+                          />
+                        </div>
+                        <div className="p-6 flex flex-col items-center text-center flex-grow">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60 mb-3 block">{post.category}</span>
+                          <h3 className="text-lg font-bold text-white mb-3 group-hover:text-secondary transition-colors line-clamp-2 leading-snug">
+                            {post.title}
+                          </h3>
+                          <p className="text-slate-400 text-sm line-clamp-2 leading-relaxed mb-5 font-medium flex-grow">
+                            {post.excerpt}
+                          </p>
+                          <div className="mt-auto flex items-center justify-between gap-3 w-full">
+                            <div className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-amber-300 via-amber-400 to-amber-600 text-black font-black text-[9px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_0_15px_rgba(234,179,8,0.3)] hover:shadow-[0_0_25px_rgba(234,179,8,0.5)]">
+                              Read More <ChevronRight className="h-3 w-3" />
+                            </div>
+                            <Link
+                              to="/blog"
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full border border-secondary/60 text-secondary font-black text-[9px] uppercase tracking-widest hover:bg-secondary hover:text-black hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_0_10px_rgba(234,179,8,0.1)] hover:shadow-[0_0_20px_rgba(234,179,8,0.4)]"
+                            >
+                              Magic Blogs <ChevronRight className="h-3 w-3" />
+                            </Link>
+                          </div>
+                        </div>
+                      </Link>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+
+                {/* Golden highlighted side arrows - always visible and enabled */}
+                <CarouselPrevious
+                  disabled={false}
+                  className="absolute left-3 md:left-2 top-[52%] md:top-1/2 -translate-y-1/2 bg-gradient-to-br from-amber-300 to-amber-600 text-black border-none h-10 w-10 md:h-11 md:w-11 rounded-full shadow-[0_0_25px_rgba(234,179,8,0.5)] opacity-50 hover:opacity-100 active:opacity-100 transition-all duration-300 z-30"
+                />
+                <CarouselNext
+                  disabled={false}
+                  className="absolute right-3 md:right-2 top-[52%] md:top-1/2 -translate-y-1/2 bg-gradient-to-br from-amber-300 to-amber-600 text-black border-none h-10 w-10 md:h-11 md:w-11 rounded-full shadow-[0_0_25px_rgba(234,179,8,0.5)] opacity-50 hover:opacity-100 active:opacity-100 transition-all duration-300 z-30"
+                />
+              </Carousel>
+
+              <div className="mt-16 flex justify-center">
+                <Link
+                  to="/blog"
+                  className="group flex items-center gap-3 px-10 py-5 rounded-full bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600 text-black font-black transition-all duration-300 text-[11px] uppercase tracking-[0.25em] shadow-[0_0_30px_rgba(234,179,8,0.3)] hover:scale-105 active:scale-95 hover:shadow-[0_0_50px_rgba(234,179,8,0.5)]"
+                >
+                  Explore Full Library
+                  <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+            </div>
+          </section>
+
           <section className="py-16 md:py-20 relative overflow-hidden" id="samples">
             {/* Background Video & Black Overlay */}
             <div className="absolute inset-0 z-0">
@@ -1495,7 +1719,7 @@ const Index = () => {
                 </div>
 
                 {/* Sub-section: The Sacred Remedies Library */}
-                <div className="relative">
+                <div className="relative" id="remedies">
                   <div className="flex items-center gap-4 mb-12">
                     <div className="h-px bg-gradient-to-r from-transparent to-[#D100D1]/40 flex-grow" />
                     <h3 className="text-2xl md:text-4xl font-sans font-black text-white uppercase tracking-widest text-center">
@@ -1769,69 +1993,13 @@ const Index = () => {
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          </section>
-
-          <section className="py-24 relative overflow-hidden bg-[#0d000d]">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-              <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
-                <div className="text-left">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-[0.3em] mb-6">
-                    Ancient Wisdom
-                  </div>
-                  <h2 className="text-4xl md:text-5xl font-sans font-black text-white tracking-tight leading-tight">
-                    Cosmic <span className="text-secondary italic">Insights</span>
-                  </h2>
                 </div>
-                <Link
-                  to="/blog"
-                  className="group flex items-center gap-3 text-white/50 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.2em]"
-                >
-                  Explore Full Library
-                  <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
               </div>
+            </section>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {latestPosts.map((post, i) => (
-                  <Link
-                    key={i}
-                    to={`/blog/${post.slug}`}
-                    className="group relative overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.02] transition-all duration-500 hover:border-secondary/30 hover:bg-white/[0.05]"
-                  >
-                    <div className="aspect-[16/10] overflow-hidden grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700">
-                      <img
-                        src={post.image.startsWith('http') || post.image.startsWith('/') ? post.image : `/${post.image}`}
-                        alt={post.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800";
-                        }}
-                      />
-                    </div>
-                    <div className="p-8">
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60 mb-4 block">{post.category}</span>
-                      <h3 className="text-xl font-bold text-white mb-4 group-hover:text-secondary transition-colors line-clamp-2 leading-snug">
-                        {post.title}
-                      </h3>
-                      <p className="text-slate-400 text-sm line-clamp-2 leading-relaxed mb-6 font-medium">
-                        {post.excerpt}
-                      </p>
-                      <div className="flex items-center gap-2 text-white/40 text-[9px] font-black uppercase tracking-widest group-hover:text-white transition-colors">
-                        Read Investigation
-                        <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
 
-          <section className="py-24 relative overflow-hidden bg-[#0d000d] scroll-mt-20" id="testimonials">
-            <div className="absolute inset-0 pointer-events-none">
+          <section className="py-24 relative overflow-hidden bg-[#0d000d]" id="testimonials">
+            <div className="absolute inset-0 pointer-events-none z-0">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-secondary/5 rounded-full blur-[160px]" />
             </div>
 
@@ -1984,12 +2152,9 @@ const Index = () => {
                   <CarouselNext className="static md:absolute md:-right-6 md:top-1/2 md:-translate-y-1/2 bg-secondary/10 border-secondary/20 text-secondary hover:bg-secondary hover:text-black transition-all h-12 w-12 md:h-10 md:w-10 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(234,179,8,0.1)]" />
                 </div>
               </Carousel>
-
-
             </div>
           </section>
-
-          <section className="py-24 relative overflow-hidden bg-[#0d000d]">
+          <section className="py-24 relative overflow-hidden bg-[#0d000d]" id="cta">
             {/* Background Video & Black Overlay */}
             <div className="absolute inset-0 z-0">
               <video

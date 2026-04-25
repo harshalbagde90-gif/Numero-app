@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, Orbit, Share2, ChevronRight, Zap, Sparkles, Star, Rocket } from "lucide-react";
+import { ArrowLeft, Calendar, Orbit, ChevronRight, Zap, Sparkles, Star, Rocket, Compass, X } from "lucide-react";
 import { Footer } from "@/components/Footer";
 
 interface BlogPostData {
@@ -21,6 +21,10 @@ const BlogPost = () => {
     const [post, setPost] = useState<BlogPostData | null>(null);
     const [loading, setLoading] = useState(true);
     const [scrollProgress, setScrollProgress] = useState(0);
+    const [isBrowseOpen, setIsBrowseOpen] = useState(false);
+    const [sections, setSections] = useState([
+        { id: "top", label: "Introduction", icon: Sparkles },
+    ]);
 
     useEffect(() => {
         const fetchPost = () => {
@@ -117,6 +121,59 @@ const BlogPost = () => {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
+    useEffect(() => {
+        if (!post) return;
+        
+        // Give a small delay for HTML to render
+        const timer = setTimeout(() => {
+            const headings = document.querySelectorAll(".blog-content h2");
+            const dynamicSections = Array.from(headings).map((h, i) => {
+                const id = `heading-${i}`;
+                h.id = id;
+                return {
+                    id: id,
+                    label: h.textContent || `Section ${i + 1}`,
+                    icon: Star
+                };
+            });
+
+            setSections([
+                { id: "top", label: "Introduction", icon: Sparkles },
+                ...dynamicSections,
+                { id: "final-cta", label: "Final Reveal", icon: Rocket }
+            ]);
+        }, 500);
+        
+        return () => clearTimeout(timer);
+    }, [post]);
+
+    // Lock body scroll when Browse is open
+    useEffect(() => {
+        if (isBrowseOpen) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "auto";
+        }
+        return () => {
+            document.body.style.overflow = "auto";
+        };
+    }, [isBrowseOpen]);
+
+    const scrollToSection = (id: string) => {
+        if (id === "top") {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            setIsBrowseOpen(false);
+            return;
+        }
+        const element = document.getElementById(id);
+        if (element) {
+            const yOffset = -100; // Account for fixed header
+            const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+            setIsBrowseOpen(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-[#020202] flex items-center justify-center">
@@ -210,7 +267,7 @@ const BlogPost = () => {
                             />
 
                             {/* Professional CTA Section */}
-                            <div className="mt-40 space-y-20">
+                            <div className="mt-40 space-y-20" id="final-cta">
                                 <div className="flex items-center gap-6 opacity-20">
                                     <div className="h-px flex-grow bg-white/50" />
                                     <Star className="h-5 w-5 fill-white" />
@@ -266,6 +323,95 @@ const BlogPost = () => {
                     </div>
                 </div>
             </main>
+
+            {/* Vertical Browse Button (Desktop Only) */}
+            <button
+                onClick={() => setIsBrowseOpen(true)}
+                className="hidden lg:flex fixed right-1 top-1/2 -translate-y-1/2 z-[60] bg-[#0d000d] backdrop-blur-2xl border border-secondary/50 py-10 px-3.5 rounded-[2.5rem] group transition-all duration-500 hover:bg-[#1a001a] hover:border-secondary hover:px-5 shadow-[0_0_40px_rgba(0,0,0,0.8),0_0_20px_rgba(234,179,8,0.2)] active:scale-95 flex flex-col items-center gap-8"
+            >
+                <div className="flex flex-col gap-2 items-center">
+                    {"BROWSE".split("").map((char, i) => (
+                        <span key={i} className="text-[13px] font-black text-secondary group-hover:text-white transition-colors leading-none tracking-tighter">
+                            {char}
+                        </span>
+                    ))}
+                </div>
+                <div className="w-2 h-2 rounded-full bg-secondary animate-pulse shadow-[0_0_15px_rgba(234,179,8,0.8)]" />
+            </button>
+
+            {/* Mobile Bottom Navigation Bar */}
+            <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-4 w-[94vw] max-w-[440px]">
+                <button
+                    onClick={() => setIsBrowseOpen(true)}
+                    className="flex-1 flex flex-col items-center justify-center gap-1 bg-[#0d000d]/95 backdrop-blur-2xl border border-secondary/40 py-3.5 px-4 rounded-[2rem] text-secondary shadow-[0_10px_40px_rgba(0,0,0,0.6)] active:scale-95 transition-all group"
+                >
+                    <Compass className="h-7 w-7 group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Browse Article</span>
+                </button>
+                <Link
+                    to="/blog"
+                    className="flex-1 flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-amber-300 via-amber-500 to-amber-700 py-3.5 px-4 rounded-[2rem] text-black shadow-[0_10px_40px_rgba(234,179,8,0.3)] active:scale-95 transition-all group"
+                >
+                    <Orbit className="h-7 w-7 group-hover:rotate-180 transition-transform duration-1000" />
+                    <span className="text-[11px] font-black uppercase tracking-widest">More Blogs</span>
+                </Link>
+            </div>
+
+            {/* Browse Navigation Overlay */}
+            <div
+                className={`fixed inset-0 z-[70] transition-all duration-500 ${isBrowseOpen ? "visible opacity-100" : "invisible opacity-0"}`}
+            >
+                <div
+                    className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                    onClick={() => setIsBrowseOpen(false)}
+                />
+
+                <div
+                    className={`absolute lg:right-0 lg:left-auto lg:inset-y-0 lg:w-full lg:max-w-[340px] inset-x-4 bottom-24 lg:bottom-auto lg:top-0 h-auto max-h-[85vh] lg:max-h-none lg:h-full bg-[#020202] lg:border-l border border-white/5 lg:border-none shadow-2xl transition-all duration-500 ease-out p-6 lg:p-8 flex flex-col rounded-3xl lg:rounded-none ${isBrowseOpen
+                            ? "translate-y-0 opacity-100 lg:translate-x-0"
+                            : "translate-y-10 opacity-0 lg:translate-y-0 lg:opacity-100 lg:translate-x-full"
+                        }`}
+                >
+                    <div className="flex items-center justify-between mb-8 shrink-0">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary">Navigate Article</span>
+                            <h3 className="text-xl lg:text-2xl font-serif font-black text-white tracking-tighter">Blog Guide</h3>
+                        </div>
+                        <button
+                            onClick={() => setIsBrowseOpen(false)}
+                            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    <div className="flex flex-col gap-3 overflow-y-auto pr-2 custom-scrollbar scroll-smooth flex-grow pb-4">
+                        {sections.map((section, idx) => (
+                            <button
+                                key={section.id}
+                                onClick={() => scrollToSection(section.id)}
+                                className="group flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-secondary/40 hover:bg-secondary/5 transition-all duration-300 text-left shrink-0"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/20 group-hover:bg-secondary/10 group-hover:border-secondary/20 group-hover:text-secondary transition-all">
+                                    <section.icon className="h-5 w-5" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 group-hover:text-secondary/60 transition-colors">Section {idx + 1}</span>
+                                    <span className="text-sm font-bold text-white/60 group-hover:text-white transition-colors line-clamp-1">{section.label}</span>
+                                </div>
+                                <ChevronRight className="h-4 w-4 ml-auto text-white/5 group-hover:text-secondary/40 transition-all group-hover:translate-x-1" />
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-auto pt-8 border-t border-white/5">
+                        <div className="flex items-center gap-4 text-white/20">
+                            <Orbit className="h-5 w-5 animate-spin-slow" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Article Insight Map</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <Footer />
             <style dangerouslySetInnerHTML={{

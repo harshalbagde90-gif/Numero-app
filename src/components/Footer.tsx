@@ -25,22 +25,7 @@ export function Footer() {
                         <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
                             Unlock the secrets of the universe through Pythagorean numerology. We translate cosmic frequencies into actionable insights for your life's journey.
                         </p>
-                        <div className="flex items-center gap-4">
-                            {[
-                                { icon: Instagram, label: "Instagram" },
-                                { icon: Twitter, label: "Twitter" },
-                                { icon: Facebook, label: "Facebook" }
-                            ].map((social, i) => (
-                                <a
-                                    key={i}
-                                    href="#"
-                                    className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-secondary hover:border-secondary/30 hover:bg-secondary/5 transition-all duration-300"
-                                    aria-label={social.label}
-                                >
-                                    <social.icon className="w-5 h-5" />
-                                </a>
-                            ))}
-                        </div>
+
                     </div>
 
                     {/* Quick Links */}
@@ -93,7 +78,7 @@ export function Footer() {
                             © {new Date().getFullYear()} <span className="text-slate-400 font-bold">NumGuru</span>. All cosmic rights reserved.
                         </p>
                         <p className="text-[10px] text-slate-600 font-medium">
-                            Developed with precision by <span className="text-secondary/70 font-semibold tracking-wide">Harsh Bagde</span> <span className="opacity-50 text-[9px] uppercase tracking-tighter ml-1">(CSE Graduate)</span>
+                            Empowering <span className="text-secondary/70 font-semibold tracking-wide">1,000+ Seekers</span> with Ancient Wisdom & Precision.
                         </p>
                     </div>
                     <div className="flex items-center gap-6">
@@ -103,7 +88,7 @@ export function Footer() {
                         </div>
                         <div className="flex items-center gap-3">
                             <span className="text-[10px] text-slate-600 font-bold uppercase tracking-tighter">Powered By</span>
-                            <Chrome className="h-4 w-4 text-slate-600" />
+                            <Orbit className="h-4 w-4 text-slate-600" />
                         </div>
                     </div>
                 </div>

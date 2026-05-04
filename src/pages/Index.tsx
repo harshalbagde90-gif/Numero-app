@@ -1899,17 +1899,26 @@ const Index = () => {
                   </div>
                 </div>
 
-                <div className="mt-10">
-                  <a
-                    className="group inline-flex items-center gap-2 text-secondary font-black text-sm uppercase tracking-widest hover:text-white transition-colors"
-                    href="#how-it-works"
-                  >
-                    <span>Learn the methodology</span>
-                    <div className="w-8 h-px bg-secondary group-hover:w-12 group-hover:bg-white transition-all" />
-                  </a>
+                  <div className="mt-10 flex flex-wrap gap-6 items-center">
+                    <a
+                      className="group inline-flex items-center gap-2 text-secondary font-black text-sm uppercase tracking-widest hover:text-white transition-colors"
+                      href="#how-it-works"
+                    >
+                      <span>Methodology</span>
+                      <div className="w-8 h-px bg-secondary group-hover:w-12 group-hover:bg-white transition-all" />
+                    </a>
+                    
+                    <Link
+                      className="group inline-flex items-center gap-2 text-white/60 font-black text-sm uppercase tracking-widest hover:text-secondary transition-colors"
+                      to="/blog/name-numerology-how-your-name-shapes-destiny"
+                    >
+                      <Orbit className="h-4 w-4 text-secondary/40 group-hover:text-secondary group-hover:rotate-90 transition-all" />
+                      <span>Deep Dive Guide</span>
+                      <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                    </Link>
+                  </div>
                 </div>
               </div>
-            </div>
           </section>
 
           <section className="py-24 relative overflow-hidden scroll-mt-20" id="how-it-works">

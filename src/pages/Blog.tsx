@@ -97,6 +97,54 @@ const Blog = () => {
           .sort((a: any, b: any) => String(b.id).localeCompare(String(a.id)));
 
         setBlogPosts(validPosts);
+
+        // ── CollectionPage + Blog Schema for Google ──────────────────────
+        const blogSchema = {
+          "@context": "https://schema.org",
+          "@type": "Blog",
+          "@id": "https://numguru.online/blog",
+          "name": "NumGuru Blog — Numerology Insights & Articles",
+          "description": "Explore the NumGuru blog for deep insights into numerology, life paths, lucky numbers, and celestial wisdom.",
+          "url": "https://numguru.online/blog",
+          "inLanguage": "en-IN",
+          "publisher": {
+            "@type": "Organization",
+            "name": "NumGuru",
+            "url": "https://numguru.online",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://numguru.online/favicon.svg"
+            }
+          },
+          "blogPost": validPosts.map((p: any) => {
+            const parsedDate = p.date ? new Date(p.date) : new Date("2026-01-27");
+            const isoDate = isNaN(parsedDate.getTime()) ? "2026-01-27" : parsedDate.toISOString().split('T')[0];
+            const imgUrl = p.image
+              ? `https://numguru.online${p.image.startsWith('/') ? '' : '/'}${p.image}`
+              : "https://numguru.online/og-image.png";
+            return {
+              "@type": "BlogPosting",
+              "headline": p.title,
+              "description": p.excerpt || "",
+              "url": `https://numguru.online/blog/${p.slug}`,
+              "datePublished": isoDate,
+              "dateModified": isoDate,
+              "image": imgUrl,
+              "author": { "@type": "Organization", "name": "NumGuru" }
+            };
+          })
+        };
+
+        // Inject or update the schema script tag
+        let schemaScript = document.querySelector('#blog-collection-json-ld') as HTMLScriptElement;
+        if (!schemaScript) {
+          schemaScript = document.createElement('script') as HTMLScriptElement;
+          schemaScript.id = 'blog-collection-json-ld';
+          schemaScript.type = 'application/ld+json';
+          document.head.appendChild(schemaScript);
+        }
+        schemaScript.textContent = JSON.stringify(blogSchema, null, 2);
+        // ─────────────────────────────────────────────────────────────────
       } catch (err) {
         console.error("Error loading blogs:", err);
       } finally {

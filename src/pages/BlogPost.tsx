@@ -62,39 +62,88 @@ const BlogPost = () => {
                     canonicalLink.setAttribute('href', `https://numguru.online/blog/${slug}`);
 
                     // JSON-LD Structured Data for Google Indexing
+                    // Build image URL — handle relative and absolute paths
+                    const imageUrl = foundPost.image
+                        ? `https://numguru.online${foundPost.image.startsWith('/') ? '' : '/'}${foundPost.image}`
+                        : "https://numguru.online/og-image.png";
+
+                    // Extract keywords from title + category
+                    const keywordList = [
+                        ...(foundPost.category ? [foundPost.category] : []),
+                        "numerology",
+                        "NumGuru",
+                        ...(foundPost.title || "").split(" ").filter((w: string) => w.length > 4).slice(0, 5),
+                    ].join(", ");
+
+                    // Estimate word count from content
+                    const wordCount = foundPost.content
+                        ? foundPost.content.replace(/<[^>]+>/g, "").split(/\s+/).filter(Boolean).length
+                        : 500;
+
+                    // Parse date safely
+                    const parsedDate = foundPost.date ? new Date(foundPost.date) : new Date("2026-01-27");
+                    const isoDate = isNaN(parsedDate.getTime())
+                        ? "2026-01-27"
+                        : parsedDate.toISOString().split('T')[0];
+
                     const jsonLd = {
                         "@context": "https://schema.org",
-                        "@type": "BlogPosting",
+                        "@type": "Article",
                         "headline": foundPost.title,
-                        "description": foundPost.excerpt,
-                        "image": `https://numguru.online${foundPost.image.startsWith('/') ? '' : '/'}${foundPost.image}`,
+                        "description": foundPost.excerpt || "",
+                        "image": {
+                            "@type": "ImageObject",
+                            "url": imageUrl,
+                            "width": 1200,
+                            "height": 630
+                        },
                         "author": {
                             "@type": "Organization",
-                            "name": "NumGuru"
+                            "name": "NumGuru",
+                            "url": "https://numguru.online"
                         },
                         "publisher": {
                             "@type": "Organization",
                             "name": "NumGuru",
+                            "url": "https://numguru.online",
                             "logo": {
                                 "@type": "ImageObject",
-                                "url": "https://numguru.online/logo.png"
+                                "url": "https://numguru.online/favicon.svg",
+                                "width": 60,
+                                "height": 60
                             }
                         },
-                        "datePublished": foundPost.date ? new Date(foundPost.date).toISOString().split('T')[0] : "2026-01-27",
+                        "datePublished": isoDate,
+                        "dateModified": isoDate,
+                        "inLanguage": "en-IN",
+                        "keywords": keywordList,
+                        "wordCount": wordCount,
+                        "articleSection": foundPost.category || "Numerology",
+                        "url": `https://numguru.online/blog/${slug}`,
                         "mainEntityOfPage": {
                             "@type": "WebPage",
                             "@id": `https://numguru.online/blog/${slug}`
+                        },
+                        "isPartOf": {
+                            "@type": "Blog",
+                            "@id": "https://numguru.online/blog",
+                            "name": "NumGuru Blog",
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "NumGuru"
+                            }
                         }
                     };
 
-                    let script = document.querySelector('#blog-json-ld') as HTMLScriptElement;
+                    // Inject or update the JSON-LD script tag
+                    let script = document.querySelector('#blog-post-json-ld') as HTMLScriptElement;
                     if (!script) {
                         script = document.createElement('script') as HTMLScriptElement;
-                        script.id = 'blog-json-ld';
+                        script.id = 'blog-post-json-ld';
                         script.type = 'application/ld+json';
                         document.head.appendChild(script);
                     }
-                    script.textContent = JSON.stringify(jsonLd);
+                    script.textContent = JSON.stringify(jsonLd, null, 2);
                 } else {
                     console.error("Post not found in folder for slug:", slug);
                     navigate("/blog");
@@ -265,6 +314,61 @@ const BlogPost = () => {
                                 className="blog-content"
                                 dangerouslySetInnerHTML={{ __html: post.content }}
                             />
+
+                            {/* Related Insights Section */}
+                            <div className="mt-32 pt-20 border-t border-white/5">
+                                <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
+                                    <div className="flex flex-col">
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[9px] font-black uppercase tracking-[0.3em] mb-4 w-fit">
+                                            Keep Exploring
+                                        </div>
+                                        <h3 className="text-3xl md:text-4xl font-serif font-black tracking-tight">Related <span className="text-secondary italic">Insights</span></h3>
+                                    </div>
+                                    <Link to="/blog" className="group flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/10 transition-all">
+                                        View All Library
+                                        <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                    </Link>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {(() => {
+                                        const postModules = import.meta.glob("/src/content/blogs/*.json", { eager: true });
+                                        const allPosts = Object.values(postModules).map((m: any) => m.default || m);
+                                        const related = allPosts
+                                            .filter((p: any) => p.slug !== post.slug)
+                                            .sort((a, b) => {
+                                                // Priority 1: Same category
+                                                if (a.category === post.category && b.category !== post.category) return -1;
+                                                if (a.category !== post.category && b.category === post.category) return 1;
+                                                return 0;
+                                            })
+                                            .slice(0, 3);
+
+                                        return related.map((r: any) => (
+                                            <Link key={r.slug} to={`/blog/${r.slug}`} onClick={() => window.scrollTo(0,0)} className="group flex flex-col gap-4">
+                                                <div className="aspect-[16/10] overflow-hidden rounded-2xl border border-white/10 relative">
+                                                    <img 
+                                                        src={r.image.startsWith('http') || r.image.startsWith('/') ? r.image : `/${r.image}`}
+                                                        alt={r.title}
+                                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                                        onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800"; }}
+                                                    />
+                                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-secondary/60">{r.category}</span>
+                                                    <h4 className="text-lg font-bold text-white group-hover:text-secondary transition-colors line-clamp-2 leading-tight">{r.title}</h4>
+                                                    <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest text-white/30 mt-2">
+                                                        <span>{r.date}</span>
+                                                        <div className="w-1 h-1 rounded-full bg-white/20" />
+                                                        <span>{r.readTime}</span>
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        ));
+                                    })()}
+                                </div>
+                            </div>
 
                             {/* Professional CTA Section */}
                             <div className="mt-40 space-y-20" id="final-cta">

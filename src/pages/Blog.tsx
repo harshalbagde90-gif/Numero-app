@@ -391,7 +391,7 @@ const Blog = () => {
                   <article className="flex flex-col lg:flex-row items-center gap-6 md:gap-16 p-6 md:p-0 rounded-3xl ring-1 ring-secondary/30 shadow-[0_0_40px_rgba(234,179,8,0.08)] md:ring-0 md:shadow-none">
                     <div className="w-full lg:w-1/2 aspect-[16/10] overflow-hidden relative rounded-2xl md:rounded-3xl border border-secondary/30 shadow-[0_0_30px_rgba(234,179,8,0.12)]">
                       <img
-                        src={topPost.image?.startsWith('http') || topPost.image?.startsWith('/') ? encodeURI(topPost.image) : `/${encodeURI(topPost.image)}`}
+                        src={topPost.image?.startsWith('http') || topPost.image?.startsWith('/') ? encodeURI(topPost.image) : `/${encodeURI(topPost.image || 'og-image.png')}`}
                         alt={topPost.title}
                         className="w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-105"
                         onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200"; }}
@@ -436,7 +436,7 @@ const Blog = () => {
                 <article className="flex flex-col lg:flex-row items-center gap-6 md:gap-16">
                   <div className="w-full lg:w-1/2 aspect-[16/10] overflow-hidden relative rounded-2xl md:rounded-3xl border border-white/5 shadow-2xl">
                     <img
-                      src={post.image?.startsWith('http') || post.image?.startsWith('/') ? encodeURI(post.image) : `/${encodeURI(post.image)}`}
+                      src={post.image?.startsWith('http') || post.image?.startsWith('/') ? encodeURI(post.image) : `/${encodeURI(post.image || 'og-image.png')}`}
                       alt={post.title}
                       className="w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-105"
                       onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200"; }}

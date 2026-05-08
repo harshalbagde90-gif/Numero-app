@@ -1299,7 +1299,7 @@ const Index = () => {
                       >
                         <div className="aspect-[16/10] overflow-hidden grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700 shrink-0">
                           <img
-                            src={post.image.startsWith('http') || post.image.startsWith('/') ? post.image : `/${post.image}`}
+                            src={post.image?.startsWith('http') || post.image?.startsWith('/') ? post.image : `/${post.image || 'og-image.png'}`}
                             alt={post.title}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]"
                             onError={(e) => {

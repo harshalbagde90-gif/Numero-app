@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Orbit, ShieldCheck, FileText, RefreshCcw } from "lucide-react";
+import { ArrowLeft, Orbit, Shield, FileText, RefreshCw } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { useCurrency } from "@/contexts/CurrencyContext";

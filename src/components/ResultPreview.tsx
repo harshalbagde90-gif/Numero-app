@@ -4,7 +4,7 @@ import {
   getCoreAlignmentUseCase,
   getFriendlyGrowthAdvice
 } from "@/lib/numerology";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,6 +67,9 @@ import {
   Target,
   Crown
 } from "lucide-react";
+import { toast } from "sonner";
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { Footer } from "./Footer";
 import { useToast } from "@/hooks/use-toast";
 import LanguageTranslator from "./LanguageTranslator";
@@ -78,6 +81,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ReviewForm } from "@/components/ReviewForm";
 
 interface ResultPreviewProps {
   reading: NumerologyReading | null;
@@ -120,7 +124,157 @@ export function ResultPreview({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   const reportRef = React.useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
+  const location = useLocation();
+  const { toast: showToast } = useToast();
+
+  const handleDownloadPDF = () => {
+    try {
+      if (!reading) return;
+      toast("Generating PDF", { description: "Preparing your premium report..." });
+      
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 20;
+      const maxLineWidth = pageWidth - margin * 2;
+      let cursorY = 20;
+
+      const addBackground = () => {
+        pdf.setFillColor(5, 0, 5); // Cosmic dark background
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+      };
+      
+      addBackground();
+
+      const addText = (text: string, size: number, isBold: boolean, color: [number, number, number], align: 'left' | 'center' = 'left') => {
+        if (!text) return;
+        pdf.setFontSize(size);
+        pdf.setFont("helvetica", isBold ? "bold" : "normal");
+        pdf.setTextColor(color[0], color[1], color[2]);
+        
+        const lines = pdf.splitTextToSize(text, maxLineWidth);
+        const lineHeight = size * 0.352778 * 1.4; 
+        const blockHeight = lines.length * lineHeight;
+        
+        if (cursorY + blockHeight > 280) {
+          pdf.addPage();
+          addBackground();
+          cursorY = 20;
+        }
+        
+        if (align === 'center') {
+          lines.forEach((line: string) => {
+             const textWidth = pdf.getStringUnitWidth(line) * size * 0.352778;
+             pdf.text(line, (pageWidth - textWidth) / 2, cursorY);
+             cursorY += lineHeight;
+          });
+        } else {
+          pdf.text(lines, margin, cursorY);
+          cursorY += blockHeight;
+        }
+        cursorY += 2;
+      };
+
+      const colorTitle: [number, number, number] = [255, 255, 255]; 
+      const colorSubtitle: [number, number, number] = [245, 158, 11]; 
+      const colorText: [number, number, number] = [200, 200, 200]; 
+
+      addText(`PREMIUM NUMEROLOGY REPORT`, 24, true, colorSubtitle, 'center');
+      cursorY += 2;
+      addText(`Prepared for: ${reading.name.toUpperCase()}`, 16, true, colorTitle, 'center');
+      cursorY += 2;
+      addText(`Date of Birth: ${reading.dob.toLocaleDateString()}`, 12, false, colorText, 'center');
+      cursorY += 10;
+      
+      addText("Core Numerology Profile", 18, true, colorTitle);
+      cursorY += 2;
+      addText(`Life Path Number: ${reading.lifePathNumber} - ${reading.lifePathTraits.title}`, 12, true, colorSubtitle);
+      addText(`Soul Urge Number: ${reading.soulUrgeNumber} - ${reading.soulUrgeTraits.split('.')[0]}`, 12, true, colorSubtitle);
+      addText(`Expression Number: ${reading.expressionNumber} - ${reading.expressionTraits.split('.')[0]}`, 12, true, colorSubtitle);
+      cursorY += 8;
+
+      addText("Vibrational Colors & Matrix", 18, true, colorTitle);
+      cursorY += 2;
+      addText(`Primary Aura Color: ${reading.luckyColor.name}`, 12, true, colorSubtitle);
+      addText(reading.luckyColor.line, 11, false, colorText);
+      cursorY += 2;
+      addText(`Lucky Numbers: ${reading.luckyNumbers.join(', ')}`, 12, true, colorSubtitle);
+      addText(`Friendly Numbers: ${reading.friendlyNumbers.join(', ')}`, 12, true, colorSubtitle);
+      addText(`Enemy Numbers: ${reading.enemyNumbers.join(', ')}`, 12, true, colorSubtitle);
+      cursorY += 8;
+
+      const modules = [
+        { title: "Personal Growth Guidance", data: reading.growthBlueprint },
+        { title: "Guidance (Do This, Avoid This)", data: reading.guidanceModule },
+        { title: "Work Style & Career Environment", data: reading.careerModule },
+        { title: "Emotional Pattern Decoder", data: reading.emotionsModule },
+        { title: "Decision-Making Guide", data: reading.decisionModule },
+        { title: "Relationship Style", data: reading.relationshipModule }
+      ];
+
+      modules.forEach(mod => {
+        if (!mod.data) return;
+        addText(mod.title, 16, true, colorTitle); 
+        cursorY += 2;
+        if (mod.data.para) {
+          addText(mod.data.para, 11, false, colorText);
+        }
+        if (mod.data.points && mod.data.points.length > 0) {
+          mod.data.points.forEach(pt => {
+             addText(`• ${pt}`, 11, false, colorText);
+          });
+        }
+        cursorY += 6;
+      });
+
+      addText("Practical Remedies & Cosmic Routine", 16, true, colorTitle);
+      cursorY += 2;
+      addText(`Daily Habit: ${reading.remedies.habit}`, 11, false, colorText);
+      addText(`Quick Tip: ${reading.remedies.quickTip}`, 11, false, colorText);
+      addText(`Best Day: ${reading.remedies.bestDay}`, 11, false, colorText);
+      cursorY += 6;
+      
+      addText(`Karmic Law: ${reading.karmicLaw.title}`, 16, true, colorTitle);
+      cursorY += 2;
+      addText(reading.karmicLaw.desc, 11, false, colorText);
+      cursorY += 6;
+
+      if (reading.cosmicFrequency) {
+          addText("Cosmic Frequency & Mantra", 16, true, colorTitle);
+          cursorY += 2;
+          addText(`Mantra: "${reading.cosmicFrequency.mantra}"`, 12, true, colorSubtitle);
+          addText(reading.cosmicFrequency.instruction, 11, false, colorText);
+          cursorY += 6;
+      }
+      
+      try {
+        const rawData = `${reading.name}|${reading.dob.getTime()}|${isUnlocked ? 1 : 0}`;
+        const encodedData = btoa(encodeURIComponent(rawData));
+        const slug = reading.name.trim().toLowerCase().replace(/\s+/g, '-');
+        const shareUrl = `${window.location.origin}${window.location.pathname}?v=${encodedData}&report=${slug}`;
+        
+        cursorY += 4;
+        addText("Your Permanent Virtual Link", 16, true, colorTitle);
+        cursorY += 2;
+        addText("Access your interactive digital report anytime by visiting the link below:", 11, false, colorText);
+        addText(shareUrl, 11, true, colorSubtitle);
+        cursorY += 6;
+      } catch (e) {
+        // Fallback if URL gen fails
+      }
+
+      pdf.save(`Numerology_Report_${reading.name.replace(/\s+/g, '_')}.pdf`);
+      toast.success("PDF Downloaded", { description: "Your premium report has been saved." });
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+      toast.error("Download Failed", { description: "Could not generate PDF. Please try again." });
+    }
+  };
 
   const shareUrl = React.useMemo(() => {
     if (!reading) return "";
@@ -139,7 +293,7 @@ export function ResultPreview({
   const handleCopy = () => {
     navigator.clipboard.writeText(shareUrl);
     setCopied(true);
-    toast({
+    showToast({
       title: "Link Copied! 🔗",
       description: "You can now share your report anywhere.",
     });
@@ -195,6 +349,45 @@ export function ResultPreview({
     </Card>
   );
 
+  const getModuleColors = (colorClass: string) => {
+    if (colorClass.includes('emerald')) return {
+      border: 'hover:border-emerald-500/40', shadow: 'hover:shadow-emerald-500/5', glow: 'group-hover:border-emerald-500/10',
+      iconBg: 'group-hover:bg-emerald-500/10', iconBorder: 'group-hover:border-emerald-500/30',
+      title: 'group-hover:text-emerald-400', subtitle: 'group-hover:text-emerald-500/50',
+      nodeBg: 'bg-emerald-500', nodeShadow: 'shadow-[0_0_8px_#10B981]', nodeBorder: 'border-emerald-500/30', line: 'border-emerald-500/20'
+    };
+    if (colorClass.includes('blue')) return {
+      border: 'hover:border-blue-500/40', shadow: 'hover:shadow-blue-500/5', glow: 'group-hover:border-blue-500/10',
+      iconBg: 'group-hover:bg-blue-500/10', iconBorder: 'group-hover:border-blue-500/30',
+      title: 'group-hover:text-blue-400', subtitle: 'group-hover:text-blue-500/50',
+      nodeBg: 'bg-blue-500', nodeShadow: 'shadow-[0_0_8px_#3B82F6]', nodeBorder: 'border-blue-500/30', line: 'border-blue-500/20'
+    };
+    if (colorClass.includes('pink')) return {
+      border: 'hover:border-pink-500/40', shadow: 'hover:shadow-pink-500/5', glow: 'group-hover:border-pink-500/10',
+      iconBg: 'group-hover:bg-pink-500/10', iconBorder: 'group-hover:border-pink-500/30',
+      title: 'group-hover:text-pink-400', subtitle: 'group-hover:text-pink-500/50',
+      nodeBg: 'bg-pink-500', nodeShadow: 'shadow-[0_0_8px_#EC4899]', nodeBorder: 'border-pink-500/30', line: 'border-pink-500/20'
+    };
+    if (colorClass.includes('purple')) return {
+      border: 'hover:border-purple-500/40', shadow: 'hover:shadow-purple-500/5', glow: 'group-hover:border-purple-500/10',
+      iconBg: 'group-hover:bg-purple-500/10', iconBorder: 'group-hover:border-purple-500/30',
+      title: 'group-hover:text-purple-400', subtitle: 'group-hover:text-purple-500/50',
+      nodeBg: 'bg-purple-500', nodeShadow: 'shadow-[0_0_8px_#A855F7]', nodeBorder: 'border-purple-500/30', line: 'border-purple-500/20'
+    };
+    if (colorClass.includes('rose')) return {
+      border: 'hover:border-rose-500/40', shadow: 'hover:shadow-rose-500/5', glow: 'group-hover:border-rose-500/10',
+      iconBg: 'group-hover:bg-rose-500/10', iconBorder: 'group-hover:border-rose-500/30',
+      title: 'group-hover:text-rose-400', subtitle: 'group-hover:text-rose-500/50',
+      nodeBg: 'bg-rose-500', nodeShadow: 'shadow-[0_0_8px_#F43F5E]', nodeBorder: 'border-rose-500/30', line: 'border-rose-500/20'
+    };
+    return {
+      border: 'hover:border-amber-500/40', shadow: 'hover:shadow-amber-500/5', glow: 'group-hover:border-amber-500/10',
+      iconBg: 'group-hover:bg-amber-500/10', iconBorder: 'group-hover:border-amber-500/30',
+      title: 'group-hover:text-amber-400', subtitle: 'group-hover:text-amber-500/50',
+      nodeBg: 'bg-amber-500', nodeShadow: 'shadow-[0_0_8px_#F59E0B]', nodeBorder: 'border-amber-500/30', line: 'border-amber-500/20'
+    };
+  };
+
   const ReportModuleItem = ({
     id,
     icon: Icon,
@@ -207,58 +400,63 @@ export function ResultPreview({
     title: string,
     colorClass: string,
     content: { para: string, points: string[] }
-  }) => (
-    <div
-      className="group relative border border-white/5 mb-4 bg-[#030303] rounded-[1.8rem] md:rounded-[1.5rem] shadow-2xl transition-all duration-700 hover:border-amber-500/40 hover:-translate-y-1 hover:shadow-amber-500/5 no-zoom overflow-hidden"
-    >
-      {/* Razor-Thin Gold Edge Glow */}
-      <div className="absolute inset-0 border border-transparent group-hover:border-amber-500/10 rounded-[1.8rem] md:rounded-[1.5rem] pointer-events-none transition-all duration-700" />
+  }) => {
+    const c = getModuleColors(colorClass);
+    return (
+      <div
+        className={`group relative border border-white/5 mb-4 bg-[#030303] rounded-[1.8rem] md:rounded-[1.5rem] shadow-2xl transition-all duration-700 ${c.border} hover:-translate-y-1 ${c.shadow} no-zoom overflow-hidden`}
+      >
+        {/* Razor-Thin Edge Glow */}
+        <div className={`absolute inset-0 border border-transparent ${c.glow} rounded-[1.8rem] md:rounded-[1.5rem] pointer-events-none transition-all duration-700`} />
 
-      {/* Header Part */}
-      <div className="py-5 md:py-6 px-4 md:px-5 border-b border-white/5">
-        <div className="flex items-center gap-4 md:gap-5 text-left relative z-10 w-full">
-          {/* Integrated Icon */}
-          <div className={`relative p-2.5 md:p-3.5 rounded-xl md:rounded-2xl bg-white/[0.03] border border-white/10 shadow-2xl group-hover:scale-110 group-hover:bg-amber-500/10 group-hover:border-amber-500/30 transition-all duration-500 ${colorClass}`}>
-            <Icon className="h-5 w-5 md:h-6 md:w-6" />
-          </div>
-          <div className="flex flex-col ml-1 md:ml-0">
-            <span className="font-serif text-[18px] md:text-xl text-white tracking-tight font-bold group-hover:text-amber-400 transition-colors duration-500">
-              {title}
-            </span>
-            <span className="text-[10px] uppercase tracking-[0.2em] text-white/40 group-hover:text-amber-500/50 transition-colors font-bold">
-              Module Analysis
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-5 md:px-16 py-8 relative">
-        {/* Sacred Node Vertical Line - Slimmer on mobile, dashed on desktop */}
-        <div className="absolute left-[29px] md:left-[39px] top-6 bottom-12 w-px border-l border-white/5 md:border-dashed md:border-white/10" />
-
-        <div className="space-y-6 relative z-10">
-          <p translate="yes" className="text-white/80 leading-relaxed font-medium text-[14px] md:text-[16px] max-w-3xl border-l-2 border-indigo-500/20 pl-4 py-1 italic">
-            {content.para}
-          </p>
-
-          <ul className="space-y-5 md:space-y-4">
-            {content.points.map((point, idx) => (
-              <li key={idx} className="flex items-start gap-3 md:gap-4 text-[13px] md:text-[15px] text-white/70 group/item">
-                <div className="relative mt-1.5 flex-shrink-0">
-                  {/* Glowing Sacred Node */}
-                  <div className="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_#F59E0B] group-hover/item:scale-125 transition-transform" />
-                  <div className="absolute inset-x-[-5px] inset-y-[-5px] border border-amber-500/30 rounded-full scale-0 group-hover/item:scale-100 transition-transform duration-300" />
-                </div>
-                <span translate="yes" className="leading-snug group-hover/item:text-white transition-colors duration-300">
-                  {point}
+        {/* Header Part */}
+        <div className="py-5 md:py-6 px-4 md:px-5 border-b border-white/5">
+          <div className="flex items-center justify-between text-left relative z-10 w-full">
+            {/* Integrated Icon */}
+            <div className="flex items-center gap-4 md:gap-5">
+              <div className={`relative p-2.5 md:p-3.5 rounded-xl md:rounded-2xl bg-white/[0.03] border border-white/10 shadow-2xl group-hover:scale-110 ${c.iconBg} ${c.iconBorder} transition-all duration-500 ${colorClass}`}>
+                <Icon className="h-5 w-5 md:h-6 md:w-6" />
+              </div>
+              <div className="flex flex-col ml-1 md:ml-0">
+                <span className={`font-serif text-[18px] md:text-xl text-white tracking-tight font-bold ${c.title} transition-colors duration-500`}>
+                  {title}
                 </span>
-              </li>
-            ))}
-          </ul>
+                <span className={`text-[10px] uppercase tracking-[0.2em] text-white/40 ${c.subtitle} transition-colors font-bold`}>
+                  Module Analysis
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-5 md:px-16 py-8 relative">
+          {/* Sacred Node Vertical Line */}
+          <div className="absolute left-[29px] md:left-[39px] top-6 bottom-12 w-px border-l border-white/5 md:border-dashed md:border-white/10" />
+
+          <div className="space-y-6 relative z-10">
+            <p translate="yes" className={`text-white/80 leading-relaxed font-medium text-[14px] md:text-[16px] max-w-3xl border-l-2 ${c.line} pl-4 py-1 italic`}>
+              {content.para}
+            </p>
+
+            <ul className="space-y-5 md:space-y-4">
+              {content.points.map((point, idx) => (
+                <li key={idx} className="flex items-start gap-3 md:gap-4 text-[13px] md:text-[15px] text-white/70 group/item">
+                  <div className="relative mt-1.5 flex-shrink-0">
+                    {/* Glowing Sacred Node */}
+                    <div className={`w-2 md:w-2.5 h-2 md:h-2.5 rounded-full ${c.nodeBg} ${c.nodeShadow} group-hover/item:scale-125 transition-transform`} />
+                    <div className={`absolute inset-x-[-5px] inset-y-[-5px] border ${c.nodeBorder} rounded-full scale-0 group-hover/item:scale-100 transition-transform duration-300`} />
+                  </div>
+                  <span translate="yes" className="leading-snug group-hover/item:text-white transition-colors duration-300">
+                    {point}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const PremiumInsightCard = ({
     id,
@@ -277,7 +475,7 @@ export function ResultPreview({
     const Icon = icons[index % icons.length];
 
     return (
-      <div className="border border-amber-500/20 mb-6 bg-[#050505] rounded-[2rem] shadow-2xl transition-all duration-700 group overflow-hidden hover:border-amber-400/50 hover:shadow-[0_0_50px_rgba(234,179,8,0.2)] hover:-translate-y-1 relative">
+      <div className="border border-amber-500/20 mb-6 bg-[#150a02] rounded-[2rem] shadow-2xl transition-all duration-700 group overflow-hidden hover:border-amber-400/50 hover:shadow-[0_0_50px_rgba(234,179,8,0.2)] hover:-translate-y-1 relative">
         <div className="py-7 px-8 border-b border-white/5">
           <div className="flex items-center gap-6 text-left relative z-10">
             <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 group-hover:bg-amber-500/20 group-hover:scale-110 transition-all duration-500 shadow-[0_0_15px_rgba(234,179,8,0.1)]">
@@ -311,7 +509,7 @@ export function ResultPreview({
   };
 
   return (
-    <div id="top" className="min-h-screen relative font-sans animate-in fade-in duration-700 pb-20 bg-[#0a0518] text-white">
+    <div id="top" className="min-h-screen relative font-sans animate-in fade-in duration-700 pb-20 bg-[#130b02] text-white">
       <style>{`
         @keyframes flow-1 {
           0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1.1); }
@@ -370,114 +568,94 @@ export function ResultPreview({
         }
       `}</style>
 
-      {/* --- Cosmic Nebula: Premium Deep Purple & Midnight Background --- */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-[#0a0518]">
-        {/* Soft Purple Luminous Veil */}
-        <div className="absolute -top-[15%] -left-[10%] w-[70%] h-[70%] bg-primary/20 rounded-[100%] blur-[130px] animate-flow-1" />
-
-        {/* Ethereal Gold Luminous Veil */}
-        <div className="absolute top-[20%] -right-[10%] w-[65%] h-[65%] bg-secondary/10 rounded-[100%] blur-[140px] animate-flow-2" />
-
-        {/* Deep Violet Cosmic Breath */}
-        <div className="absolute bottom-[-10%] left-[20%] w-[60%] h-[60%] bg-primary/15 rounded-[100%] blur-[120px] animate-flow-3" />
-
-        {/* Deep Core Glow */}
-        <div className="absolute top-[40%] left-[35%] w-[40%] h-[40%] bg-secondary/5 rounded-full blur-[110px] opacity-50" />
-
-        {/* Texture Layer */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]" />
-      </div>
-
-      <div className="relative z-10">
+      <div className="relative z-10 bg-[#0a0502]">
 
         {/* --- Top Navigation Bar --- */}
-        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-black/80 backdrop-blur-xl border-b border-white/10 h-16 md:h-20' : 'bg-transparent h-20 md:h-24'}`}>
+        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 glass-panel bg-background/70 border-b border-border ${scrolled ? "h-16 md:h-20" : "h-20 md:h-24"}`}>
           <div className="max-w-[100vw] mx-auto h-full px-1 sm:px-4 xl:px-8 flex items-center justify-between">
             <button
               onClick={handleLogoClick}
-              className="flex items-center gap-1.5 group hover:opacity-80 transition-all active:scale-95 duration-200 ml-0"
+              className="flex items-center gap-1.5 group hover:opacity-80 transition-all active:scale-95 duration-200 ml-0 shrink-0"
             >
-              <div className="p-2.5 rounded-xl bg-secondary/10 border border-secondary/20 group-hover:drop-shadow-[0_0_12px_rgba(234,179,8,0.6)] transition-all duration-500">
-                <Orbit className={`h-6 w-6 text-secondary transition-transform duration-1000 ${isLogoSpinning ? 'animate-logo-spin' : 'group-hover:rotate-180'}`} />
+              <div className="p-2 md:p-2.5 rounded-xl bg-secondary/10 border border-secondary/20 group-hover:drop-shadow-[0_0_12px_rgba(234,179,8,0.6)] transition-all duration-500">
+                <Orbit className={`h-5 w-5 md:h-6 md:w-6 text-secondary transition-transform duration-1000 ${isLogoSpinning ? 'animate-logo-spin' : 'group-hover:rotate-180'}`} />
               </div>
-              <div className="flex flex-col text-left justify-center pl-1 sm:pl-2">
-                <span className="font-serif font-black text-xl sm:text-3xl text-white tracking-[-0.02em] leading-none mb-1">
+              <div className="flex flex-col text-left justify-center pl-1 sm:pl-2 shrink-0">
+                <span className="font-serif font-black text-lg md:text-2xl xl:text-3xl text-white tracking-[-0.02em] leading-none mb-1">
                   Num<span className="text-secondary drop-shadow-[0_0_8px_rgba(234,179,8,0.4)]">Guru</span>
                 </span>
-                <span className="text-secondary/70 font-sans text-[7px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.4em] leading-none pl-0.5">
+                <span className="text-secondary/70 font-sans text-[6px] md:text-[8px] xl:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.4em] leading-none pl-0.5">
                   Premium Portal
                 </span>
               </div>
             </button>
 
-            <div className="hidden lg:flex items-center gap-1 xl:gap-2.5 text-[10px] font-bold tracking-widest text-white uppercase">
-              <a href="#core" className="px-3 xl:px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:border-secondary hover:bg-secondary/10 text-white hover:text-white hover:shadow-[0_0_15px_rgba(234,179,8,0.3)] transition-all flex items-center gap-1.5">
-                <Activity className="h-3 w-3 text-secondary" />
-                <span className="tracking-[0.1em] xl:tracking-[0.2em] font-black">Core</span>
+            <div className="hidden lg:flex items-center gap-0.5 xl:gap-2 text-[8.5px] xl:text-[10px] font-bold tracking-[0.15em] xl:tracking-[0.2em] text-white uppercase shrink-0">
+              <a href="#core" className="px-2.5 xl:px-4 py-1.5 xl:py-2 rounded-full bg-white/5 border border-white/10 hover:border-secondary hover:bg-secondary/10 text-white hover:text-white hover:shadow-[0_0_15px_rgba(234,179,8,0.3)] transition-all flex items-center gap-1 xl:gap-1.5">
+                <Activity className="h-2.5 w-2.5 xl:h-3 xl:w-3 text-secondary" />
+                <span className="font-black">Core</span>
               </a>
-              <a href="#soul" className="px-3 xl:px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:border-indigo-400 hover:bg-indigo-400/10 text-white hover:text-white hover:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all flex items-center gap-1.5">
-                <VenetianMask className="h-3 w-3 text-indigo-400" />
-                <span className="tracking-[0.1em] xl:tracking-[0.2em] font-black">Soul</span>
+              <a href="#soul" className="px-2.5 xl:px-4 py-1.5 xl:py-2 rounded-full bg-white/5 border border-white/10 hover:border-indigo-400 hover:bg-indigo-400/10 text-white hover:text-white hover:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all flex items-center gap-1 xl:gap-1.5">
+                <VenetianMask className="h-2.5 w-2.5 xl:h-3 xl:w-3 text-indigo-400" />
+                <span className="font-black">Soul</span>
               </a>
-              <a href="#color" className="px-3 xl:px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:border-emerald-400 hover:bg-emerald-400/10 text-white hover:text-white hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all flex items-center gap-1.5">
-                <Palette className="h-3 w-3 text-emerald-400" />
-                <span className="tracking-[0.1em] xl:tracking-[0.2em] font-black">Color</span>
+              <a href="#color" className="px-2.5 xl:px-4 py-1.5 xl:py-2 rounded-full bg-white/5 border border-white/10 hover:border-emerald-400 hover:bg-emerald-400/10 text-white hover:text-white hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all flex items-center gap-1 xl:gap-1.5">
+                <Palette className="h-2.5 w-2.5 xl:h-3 xl:w-3 text-emerald-400" />
+                <span className="font-black">Color</span>
               </a>
-              <a href="#blueprint" className="px-3 xl:px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:border-amber-400 hover:bg-amber-400/10 text-white hover:text-white hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-all flex items-center gap-1.5">
-                <LayoutGrid className="h-3 w-3 text-amber-400" />
-                <span className="tracking-[0.1em] xl:tracking-[0.2em] font-black">Blueprint</span>
+              <a href="#blueprint" className="px-2.5 xl:px-4 py-1.5 xl:py-2 rounded-full bg-white/5 border border-white/10 hover:border-amber-400 hover:bg-amber-400/10 text-white hover:text-white hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-all flex items-center gap-1 xl:gap-1.5">
+                <LayoutGrid className="h-2.5 w-2.5 xl:h-3 xl:w-3 text-amber-400" />
+                <span className="font-black">Blueprint</span>
               </a>
-              <a href="#remedies" className="px-3 xl:px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:border-rose-400 hover:bg-rose-400/10 text-white hover:text-white hover:shadow-[0_0_15px_rgba(244,63,94,0.3)] transition-all flex items-center gap-1.5">
-                <Gem className="h-3 w-3 text-rose-400" />
-                <span className="tracking-[0.1em] xl:tracking-[0.2em] font-black">Remedies</span>
+              <a href="#remedies" className="px-2.5 xl:px-4 py-1.5 xl:py-2 rounded-full bg-white/5 border border-white/10 hover:border-rose-400 hover:bg-rose-400/10 text-white hover:text-white hover:shadow-[0_0_15px_rgba(244,63,94,0.3)] transition-all flex items-center gap-1 xl:gap-1.5">
+                <Gem className="h-2.5 w-2.5 xl:h-3 xl:w-3 text-rose-400" />
+                <span className="font-black">Remedies</span>
               </a>
 
               <div className="h-4 w-px bg-white/20 mx-0.5" />
 
               <button
                 onClick={() => setIsLearningHubOpen(true)}
-                className="relative group px-4 xl:px-5 py-2 rounded-full overflow-hidden transition-all duration-300 active:scale-95 animate-smooth-shake shadow-[0_0_20px_rgba(251,191,36,0.2)]"
+                className="relative group px-3.5 xl:px-5 py-1.5 xl:py-2 rounded-full overflow-hidden transition-all duration-300 active:scale-95 animate-smooth-shake shadow-[0_0_20px_rgba(251,191,36,0.2)] shrink-0"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-500 opacity-100" />
                 <div className="absolute inset-0 bg-yellow-400 blur-md opacity-40 group-hover:opacity-70 group-hover:blur-lg transition-all animate-pulse" />
                 <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
                   <div className="absolute inset-y-0 w-24 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer-shine" />
                 </div>
-                <span className="relative z-10 text-[#1a0f02] flex items-center gap-1.5 px-0.5 xl:px-1">
-                  <Star className="h-3.5 w-3.5 fill-red-600 text-red-600 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] animate-pulse" />
-                  <span className="tracking-[0.1em] xl:tracking-[0.12em] font-black pointer-events-none whitespace-nowrap text-[11px] xl:text-[12px] md:text-sm">Learning Hub</span>
+                <span className="relative z-10 text-[#1a0f02] flex items-center gap-1 xl:gap-1.5 px-0.5 xl:px-1">
+                  <Star className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 fill-red-600 text-red-600 drop-shadow-[0_0_8px_rgba(220,38,38,0.8)] animate-pulse" />
+                  <span className="font-black pointer-events-none whitespace-nowrap text-[10px] xl:text-[12px] md:text-xs">Learning Hub</span>
                 </span>
               </button>
-
-              <Link to="/blog" className="px-3 xl:px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:border-secondary hover:bg-secondary/10 text-white hover:text-white hover:shadow-[0_0_15px_rgba(234,179,8,0.3)] transition-all flex items-center gap-1.5 group">
-                <BookOpen className="h-3 w-3 text-secondary group-hover:scale-110 transition-transform" />
-                <span className="tracking-[0.1em] xl:tracking-[0.2em] font-black">Blog</span>
-              </Link>
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2 xl:gap-3 ml-1">
-              <div className="hidden lg:flex items-center">
-                <LanguageTranslator id="google_translate_element_result" />
-              </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
-                <button
-                  onClick={() => setIsShareModalOpen(true)}
-                  className="hidden lg:flex relative group px-3 xl:px-5 py-2 rounded-full overflow-hidden transition-all duration-500 active:scale-95 shadow-[0_0_25px_rgba(0,0,0,0.1)]"
-                >
-                  <div className="absolute inset-0 bg-[#FFFDF2] transition-colors group-hover:bg-white" />
-                  <div className="absolute inset-0 bg-white/50 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="absolute inset-y-0 w-24 bg-gradient-to-r from-transparent via-amber-500/20 to-transparent animate-shimmer-shine" />
+                {/* Desktop: Stacked Translator & Share */}
+                <div className="hidden lg:flex flex-col items-end gap-1.5">
+                  <div className="scale-90 origin-right">
+                    <LanguageTranslator id="google_translate_report_desktop" isLarge={false} />
                   </div>
-                  <div className="absolute inset-0 border-[2px] border-amber-500/30 rounded-full group-hover:border-amber-500/60 transition-colors pointer-events-none z-20" />
-                  <span className="relative z-10 text-[#1a0f02] group-hover:text-black flex items-center gap-1.5 px-0.5 transition-colors">
-                    <Share2 className="h-3.5 w-3.5 text-amber-600 group-hover:scale-110 transition-transform" />
-                    <span className="tracking-[0.1em] font-black text-[9px] xl:text-[10px] uppercase whitespace-nowrap">
-                      Share Profile
+                  <button
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="relative group px-4 py-1.5 rounded-full overflow-hidden transition-all duration-500 active:scale-95 shadow-[0_0_25px_rgba(0,0,0,0.1)] flex items-center justify-center scale-90 origin-right"
+                  >
+                    <div className="absolute inset-0 bg-[#FFFDF2] transition-colors group-hover:bg-white" />
+                    <div className="absolute inset-0 bg-white/50 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute inset-y-0 w-24 bg-gradient-to-r from-transparent via-amber-500/20 to-transparent animate-shimmer-shine" />
+                    </div>
+                    <div className="absolute inset-0 border-[2px] border-amber-500/30 rounded-full group-hover:border-amber-500/60 transition-colors pointer-events-none z-20" />
+                    <span className="relative z-10 text-[#1a0f02] group-hover:text-black flex items-center gap-1.5 px-1 transition-colors">
+                      <Share2 className="h-3 w-3 text-amber-600 group-hover:scale-110 transition-transform" />
+                      <span className="tracking-[0.1em] font-black text-[9px] uppercase whitespace-nowrap">
+                        Share Profile
+                      </span>
                     </span>
-                  </span>
-                </button>
+                  </button>
+                </div>
 
                 <div className="lg:hidden flex items-center">
                   <button
@@ -492,9 +670,9 @@ export function ResultPreview({
           </div>
         </nav>
 
-        <div ref={reportRef}>
+        <div ref={reportRef} id="report-content">
           {/* --- Hero Section - Optimized Padding --- */}
-          <div className="relative text-white pt-32 pb-12 md:pt-16 md:pb-16 overflow-hidden min-h-[500px] md:min-h-[600px] flex items-center">
+          <div className="relative text-white pt-32 pb-12 md:pt-32 md:pb-16 overflow-hidden min-h-[500px] md:min-h-[600px] flex items-center">
             {/* Background Video */}
             <div className="absolute inset-0 z-0">
               <video
@@ -675,7 +853,7 @@ export function ResultPreview({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
                 {/* Psychic Number (Mulank) Rectangle */}
-                <div className="group relative overflow-hidden rounded-[2rem] bg-[#050505] p-8 border border-amber-500/30 transition-all duration-700 hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+                <div className="group relative overflow-hidden rounded-[2rem] bg-[#150a02] p-8 border border-cyan-500/30 transition-all duration-700 hover:scale-[1.03] hover:border-cyan-400 hover:shadow-[0_0_30px_rgba(34,211,238,0.2)]">
                   <div className="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all" />
                   <div className="flex items-center gap-4 mb-6">
                     <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
@@ -703,7 +881,7 @@ export function ResultPreview({
                 </div>
 
                 {/* Expression Number Rectangle */}
-                <div className="group relative overflow-hidden rounded-[2rem] bg-[#050505] p-8 border border-amber-500/30 transition-all duration-700 hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+                <div className="group relative overflow-hidden rounded-[2rem] bg-[#150a02] p-8 border border-amber-500/30 transition-all duration-700 hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]">
                   <div className="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all" />
                   <div className="flex items-center gap-4 mb-6">
                     <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
@@ -731,7 +909,7 @@ export function ResultPreview({
                 </div>
 
                 {/* Soul Urge Rectangle */}
-                <div className="group relative overflow-hidden rounded-[2rem] bg-[#050505] p-8 border border-amber-500/30 transition-all duration-700 hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+                <div className="group relative overflow-hidden rounded-[2rem] bg-[#150a02] p-8 border border-amber-500/30 transition-all duration-700 hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]">
                   <div className="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all" />
                   <div className="flex items-center gap-4 mb-6">
                     <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
@@ -759,7 +937,7 @@ export function ResultPreview({
                 </div>
 
                 {/* Personality Rectangle */}
-                <div className="group relative overflow-hidden rounded-[2rem] bg-[#050505] p-8 border border-amber-500/30 transition-all duration-700 hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+                <div className="group relative overflow-hidden rounded-[2rem] bg-[#150a02] p-8 border border-amber-500/30 transition-all duration-700 hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]">
                   <div className="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all" />
                   <div className="flex items-center gap-4 mb-6">
                     <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
@@ -787,7 +965,7 @@ export function ResultPreview({
                 </div>
 
                 {/* Friendly Numbers Rectangle */}
-                <div className="group relative overflow-hidden rounded-[2rem] bg-[#050505] p-8 border border-amber-500/30 transition-all duration-700 hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+                <div className="group relative overflow-hidden rounded-[2rem] bg-[#150a02] p-8 border border-amber-500/30 transition-all duration-700 hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]">
                   <div className="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all" />
                   <div className="flex items-center gap-4 mb-6">
                     <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
@@ -811,7 +989,7 @@ export function ResultPreview({
                 </div>
 
                 {/* Challenging Numbers Rectangle */}
-                <div className="group relative overflow-hidden rounded-[2rem] bg-[#050505] p-8 border border-amber-500/30 transition-all duration-700 hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+                <div className="group relative overflow-hidden rounded-[2rem] bg-[#150a02] p-8 border border-amber-500/30 transition-all duration-700 hover:scale-[1.03] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]">
                   <div className="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all" />
                   <div className="flex items-center gap-4 mb-6">
                     <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
@@ -833,7 +1011,6 @@ export function ResultPreview({
                     ))}
                   </div>
                 </div>
-              </div>
             </div>
           </div>
 
@@ -1017,7 +1194,7 @@ export function ResultPreview({
 
                   <div className="grid gap-4">
                     {reading.colorGuidance.luckyColors.map((color, idx) => (
-                      <Card key={idx} className="group relative overflow-hidden rounded-[1.2rem] bg-[#050505] border border-white/5 transition-all duration-500 shadow-xl no-zoom hover:-translate-y-2 hover:border-white/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+                      <Card key={idx} className="group relative overflow-hidden rounded-[1.2rem] bg-[#150a02] border border-white/5 transition-all duration-500 shadow-xl no-zoom hover:-translate-y-2 hover:border-white/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
                         {/* Immersive Color Flood - High contrast hover */}
                         <div
                           className="absolute inset-0 opacity-0 group-hover:opacity-[0.92] transition-all duration-500 pointer-events-none z-0"
@@ -1079,7 +1256,7 @@ export function ResultPreview({
 
                   <div className="grid gap-4">
                     {reading.colorGuidance.challengingColors.map((color, idx) => (
-                      <Card key={idx} className="group relative overflow-hidden rounded-[1.2rem] bg-[#050505] border border-white/5 transition-all duration-500 shadow-xl grayscale-[0.5] hover:grayscale-0 hover:-translate-y-2 hover:border-red-500/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] no-zoom">
+                      <Card key={idx} className="group relative overflow-hidden rounded-[1.2rem] bg-[#150a02] border border-white/5 transition-all duration-500 shadow-xl grayscale-[0.5] hover:grayscale-0 hover:-translate-y-2 hover:border-red-500/30 hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] no-zoom">
                         {/* Immersive Color Flood - High contrast hover */}
                         <div
                           className="absolute inset-0 opacity-0 group-hover:opacity-[0.88] transition-all duration-500 pointer-events-none z-0"
@@ -1119,9 +1296,10 @@ export function ResultPreview({
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div className="max-w-4xl mx-auto pt-8">
-                <div className="bg-[#050505] rounded-[2rem] p-8 md:p-10 border border-white/10 text-white overflow-hidden relative shadow-2xl h-auto min-h-[160px]">
+            <div className="max-w-4xl mx-auto pt-8 pb-24">
+                <div className="bg-[#150a02] rounded-[2rem] p-8 md:p-10 border border-white/10 text-white overflow-hidden relative shadow-2xl h-auto min-h-[160px]">
                   <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
                     <div className="relative shrink-0">
                       {/* Sub-Card Chromatic Frequency Waves Icon - Removed overflow-hidden to let waves breathe */}
@@ -1191,7 +1369,7 @@ export function ResultPreview({
                   <div className="flex flex-col items-center md:items-start md:flex-row gap-7 relative z-10 p-1">
                     <div className="relative group animate-smooth-shake">
                       {/* Royal Strategic Clipboard - Custom SVG Icon */}
-                      <div className="w-20 h-20 shrink-0 rounded-3xl bg-[#0a0518] border border-white/10 flex items-center justify-center text-white shadow-2xl relative overflow-hidden group-hover:border-amber-500/30 transition-all duration-700">
+                      <div className="w-20 h-20 shrink-0 rounded-3xl bg-[#130b02] border border-white/10 flex items-center justify-center text-white shadow-2xl relative overflow-hidden group-hover:border-amber-500/30 transition-all duration-700">
                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity" />
 
                         <svg width="44" height="44" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10 drop-shadow-[0_0_8px_rgba(251,191,36,0.2)]">
@@ -1237,7 +1415,7 @@ export function ResultPreview({
                 {/* Locked State Overlay Logic */}
                 <div className="relative">
                   {!isUnlocked && (
-                    <div className="absolute inset-0 z-30 bg-[#0a0518]/60 backdrop-blur-[4px] flex flex-col items-center justify-start pt-20 text-center rounded-2xl border-2 border-dashed border-white/10">
+                    <div className="absolute inset-0 z-30 bg-[#130b02]/60 backdrop-blur-[4px] flex flex-col items-center justify-start pt-20 text-center rounded-2xl border-2 border-dashed border-white/10">
                       <div className="bg-[#1a1b2e] p-8 rounded-2xl shadow-2xl max-w-md mx-auto text-white space-y-6">
                         <Lock className="h-12 w-12 text-[#d4af37] mx-auto" />
                         <div>
@@ -1320,7 +1498,7 @@ export function ResultPreview({
                   <div className="flex flex-col items-center md:items-start md:flex-row gap-7 relative z-10 p-1">
                     <div className="relative group animate-smooth-shake">
                       {/* Sacred Lotus Sparkle - Custom SVG Icon */}
-                      <div className="w-16 h-16 md:w-20 md:h-20 shrink-0 rounded-2xl md:rounded-3xl bg-[#0a0518] border border-white/10 flex items-center justify-center text-white shadow-2xl relative overflow-hidden group-hover:border-amber-500/30 transition-all duration-700">
+                      <div className="w-16 h-16 md:w-20 md:h-20 shrink-0 rounded-2xl md:rounded-3xl bg-[#130b02] border border-white/10 flex items-center justify-center text-white shadow-2xl relative overflow-hidden group-hover:border-amber-500/30 transition-all duration-700">
                         <div className="absolute inset-0 bg-gradient-to-br from-amber-600/10 to-orange-600/10 opacity-0 group-hover:opacity-100 transition-opacity" />
 
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10 drop-shadow-[0_0_10px_rgba(245,158,11,0.3)] md:w-[48px] md:h-[48px]">
@@ -1414,6 +1592,11 @@ export function ResultPreview({
               </div>
             </div>
 
+            {/* --- Review Collection Section --- */}
+            <div className="pt-16 pb-8">
+              <ReviewForm source="in_report" />
+            </div>
+
             {/* --- Footer Actions --- */}
             <div className="pt-20 border-t border-slate-200/50 flex flex-col items-center gap-6">
               <div className="flex flex-col items-center text-center space-y-2">
@@ -1461,6 +1644,14 @@ export function ResultPreview({
 
               <div className="grid grid-cols-1 gap-3">
                 <Button
+                  onClick={handleDownloadPDF}
+                  className="h-14 bg-amber-500 hover:bg-amber-600 text-black rounded-2xl flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.3)] active:scale-95 transition-all"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="font-black text-xs uppercase tracking-widest">Download PDF</span>
+                </Button>
+
+                <Button
                   onClick={handleCopy}
                   className="h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all"
                 >
@@ -1483,30 +1674,30 @@ export function ResultPreview({
           </DialogContent>
         </Dialog>
 
-        {/* --- Learning Hub Modal (Proper Wide Lightbox) --- */}
+        {/* --- Learning Hub Modal (Cosmic Dark Theme) --- */}
         <Dialog open={isLearningHubOpen} onOpenChange={setIsLearningHubOpen}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-[#FDFBF7] border border-amber-100 p-0 rounded-[2.5rem] shadow-[0_20px_60px_rgba(180,140,40,0.15)] scrollbar-hide [&>button:last-child]:hidden">
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-[#050005] border border-white/10 p-0 rounded-[2.5rem] shadow-[0_0_80px_rgba(234,179,8,0.15)] custom-scrollbar [&>button:last-child]:hidden">
             {/* Sticky Close Icon Container */}
             <div className="sticky top-0 z-[100] flex justify-end p-6 pointer-events-none">
               <button
                 onClick={() => setIsLearningHubOpen(false)}
-                className="pointer-events-auto h-10 w-10 bg-white/90 backdrop-blur-md rounded-full border border-amber-200 flex items-center justify-center text-[#1a0f02] shadow-xl hover:bg-amber-500 hover:text-white hover:border-amber-400 transition-all active:scale-90 group"
+                className="pointer-events-auto h-10 w-10 bg-[#0d000d]/90 backdrop-blur-md rounded-full border border-white/10 flex items-center justify-center text-white shadow-xl hover:bg-secondary/20 hover:border-secondary transition-all active:scale-90 group"
               >
                 <X className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
               </button>
             </div>
             <div className="relative p-1 space-y-0">
-              {/* Soft Golden Ambient Glow - Top only */}
-              <div className="absolute top-0 left-1/4 w-[50%] h-[30%] bg-amber-100/50 blur-[130px] rounded-full -translate-y-1/2" />
+              {/* Soft Cosmic Ambient Glow - Top only */}
+              <div className="absolute top-0 left-1/4 w-[50%] h-[30%] bg-secondary/10 blur-[130px] rounded-full -translate-y-1/2" />
 
               <div className="relative z-10 p-4 sm:p-8 md:p-16 !pb-0 space-y-12 sm:space-y-16">
                 <div className="flex flex-col items-center justify-center text-center space-y-6 w-full max-w-full overflow-hidden">
-                  <div className="inline-flex items-center justify-center mx-auto gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-amber-600/10 border border-amber-600/20 text-amber-800 text-[9px] sm:text-[11px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] mb-2">
+                  <div className="inline-flex items-center justify-center mx-auto gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[9px] sm:text-[11px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] mb-2">
                     The Mastery Library
                   </div>
 
                   {/* New Navigation Slider - Fixed Width for Mobile */}
-                  <div className="w-full max-w-[calc(100vw-4rem)] mx-auto overflow-x-auto scrollbar-hide pb-2">
+                  <div className="w-full max-w-[calc(100vw-4rem)] mx-auto overflow-x-auto custom-scrollbar pb-2">
                     <div className="flex items-center justify-start sm:justify-center gap-3 px-4 min-w-max">
                       {[
                         { id: 'lh-sec-01', label: 'Core Frequencies' },
@@ -1516,7 +1707,7 @@ export function ResultPreview({
                         <button
                           key={tab.id}
                           onClick={() => document.getElementById(tab.id)?.scrollIntoView({ behavior: 'smooth' })}
-                          className="px-5 py-2 rounded-full border border-amber-500/20 bg-amber-500/5 text-amber-900 text-[10px] font-black uppercase tracking-widest hover:bg-amber-500/10 transition-all whitespace-nowrap active:scale-95"
+                          className="px-5 py-2 rounded-full border border-white/10 bg-white/5 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:border-secondary/50 transition-all whitespace-nowrap active:scale-95"
                         >
                           {tab.label}
                         </button>
@@ -1524,202 +1715,137 @@ export function ResultPreview({
                     </div>
                   </div>
 
-                  <h2 className="text-3xl sm:text-5xl md:text-7xl font-sans font-black text-[#1a0f02] w-full text-center tracking-tight leading-[1.1] md:leading-[0.9]">
-                    The <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600 italic">Learning Hub</span>
+                  <h2 className="text-3xl sm:text-5xl md:text-7xl font-sans font-black text-white w-full text-center tracking-tight leading-[1.1] md:leading-[0.9]">
+                    The <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 italic">Learning Hub</span>
                   </h2>
-                  <p className="text-slate-600 max-w-2xl mx-auto text-sm sm:text-base md:text-lg leading-relaxed text-center font-medium px-4">
-                    Understand the "Why" and "How" behind your unique vibrational signature. This guide decodes the mechanics of your numeric destiny.
+                  <p className="text-slate-400 max-w-2xl mx-auto text-sm sm:text-base md:text-lg leading-relaxed text-center font-medium px-4">
+                    Understand the "Why" and "How" behind your unique vibrational signature. This guide decodes the mechanics of your numeric destiny so you can actively apply them.
                   </p>
                 </div>
 
                 {/* --- CORE ALIGNMENT SECTION --- */}
-                <div id="lh-sec-01" className="space-y-10 p-5 sm:p-8 md:p-14 rounded-[2.5rem] sm:rounded-[3rem] bg-amber-50/[0.4] border border-amber-100 relative overflow-hidden backdrop-blur-sm group/section">
-                  <div className="absolute top-0 right-0 w-96 h-96 bg-amber-600/5 rounded-full blur-[100px] -mr-48 -mt-48 group-hover/section:bg-amber-600/10 transition-all duration-700" />
+                <div id="lh-sec-01" className="space-y-10 p-5 sm:p-8 md:p-14 rounded-[2.5rem] sm:rounded-[3rem] bg-[#0a0505] border border-white/5 relative overflow-hidden backdrop-blur-sm group/section">
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-[100px] -mr-48 -mt-48 group-hover/section:bg-amber-500/10 transition-all duration-700" />
                   <div className="relative z-10 space-y-4 flex flex-col items-center justify-center text-center w-full">
                     <div className="flex flex-col items-center justify-center gap-4 w-full">
-                      <div className="h-1.5 md:h-2.5 w-12 md:w-16 bg-amber-600 rounded-full shadow-[0_4px_10px_rgba(217,119,6,0.2)]" />
-                      <h3 className="text-2xl sm:text-3xl md:text-4xl font-sans font-black text-[#1a0f02] uppercase tracking-tight max-w-md">01. Core Alignment & Frequencies</h3>
+                      <div className="h-1.5 md:h-2.5 w-12 md:w-16 bg-amber-500 rounded-full shadow-[0_4px_10px_rgba(217,119,6,0.2)]" />
+                      <h3 className="text-2xl sm:text-3xl md:text-4xl font-sans font-black text-white uppercase tracking-tight max-w-md">01. Core Alignment</h3>
                     </div>
-                    <p className="text-slate-500 text-sm sm:text-base max-w-xl font-medium px-2 mx-auto">The 6 foundational pillars that define your character, potential, and how you interact with the world.</p>
+                    <p className="text-slate-400 text-sm sm:text-base max-w-xl font-medium px-2 mx-auto">The foundational pillars that define your character. Here's how to practically apply them daily.</p>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4 md:gap-8 relative z-10 w-full px-1 sm:px-0">
                     {/* 1. Psychic (Mulank) */}
-                    <div className="flex flex-col h-full bg-gradient-to-br from-amber-400 to-amber-500 p-5 sm:p-7 rounded-[2rem] border-t border-white/40 shadow-[0_10px_30px_rgba(180,140,40,0.15)] shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-amber-500/30 group items-start text-left md:items-start md:text-left w-full mx-auto ml-2 -mr-8 sm:mx-0">
+                    <div className="flex flex-col h-full bg-[#0d000d] p-5 sm:p-7 rounded-[2rem] border border-white/5 shadow-xl transition-all duration-500 hover:-translate-y-2 hover:border-secondary/30 group items-start text-left md:items-start md:text-left w-full mx-auto ml-2 -mr-8 sm:mx-0">
                       <div className="flex flex-row items-center justify-start gap-3 mb-3 px-1">
-                        <div className="p-3 rounded-2xl bg-black/10 text-[#3d2a1a] group-hover:scale-110 transition-transform">
+                        <div className="p-3 rounded-2xl bg-secondary/10 text-secondary group-hover:scale-110 transition-transform">
                           <Activity className="h-6 w-6" />
                         </div>
-                        <h4 className="font-serif text-xl text-[#1a0f02] font-black group-hover:text-black transition-colors">Psychic Number</h4>
+                        <h4 className="font-serif text-xl text-white font-black transition-colors">Psychic Number</h4>
                       </div>
-                      <div className="text-sm text-[#3d2a1a]/80 leading-relaxed flex-grow space-y-4 w-full px-1">
+                      <div className="text-sm leading-relaxed flex-grow space-y-4 w-full px-1">
                         <div>
-                          <p className="text-[#1a0f02] font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
-                            <span className="h-1.5 w-1.5 bg-black/40 rounded-full" />
+                          <p className="text-white font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
+                            <span className="h-1.5 w-1.5 bg-secondary/80 rounded-full" />
                             What it means
                           </p>
-                          <p className="leading-relaxed text-black font-semibold text-[16px] text-left">Your inner personality and how you see yourself. It shows your natural behavior, thinking style, and daily habits.</p>
+                          <p className="leading-relaxed text-slate-300 font-medium text-[15px] text-left">Your inner personality and how you see yourself. It dictates your natural behavior, thinking style, and daily habits.</p>
                         </div>
                         <div>
-                          <p className="text-[#1a0f02] font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
-                            <span className="h-1.5 w-1.5 bg-black/40 rounded-full" />
-                            How to use
+                          <p className="text-white font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
+                            <span className="h-1.5 w-1.5 bg-secondary/80 rounded-full" />
+                            How to apply
                           </p>
-                          <ul className="space-y-1.5 text-black/90 font-medium list-none text-[14px] flex flex-col items-start md:items-start">
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Use when making daily decisions to match your traits.</li>
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Wear colors associated with your number on important days.</li>
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Plan your daily routine according to your number's energy.</li>
+                          <ul className="space-y-2 text-slate-400 font-medium list-none text-[14px] flex flex-col items-start md:items-start">
+                            <li className="flex gap-2 items-start"><span className="text-secondary font-bold mt-0.5">•</span> <strong>Daily Decisions:</strong> Lean into the traits of this number for small, everyday choices to reduce friction.</li>
+                            <li className="flex gap-2 items-start"><span className="text-secondary font-bold mt-0.5">•</span> <strong>Self-Care:</strong> Design your morning routine around the energy pace of this specific number.</li>
                           </ul>
                         </div>
                       </div>
                     </div>
 
                     {/* 2. Life Path */}
-                    <div className="flex flex-col h-full bg-gradient-to-br from-amber-400 to-amber-500 p-5 sm:p-7 rounded-[2rem] border-t border-white/40 shadow-[0_10px_30px_rgba(180,140,40,0.15)] shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-amber-500/30 group items-start text-left md:items-start md:text-left w-full mx-auto ml-2 -mr-8 sm:mx-0">
+                    <div className="flex flex-col h-full bg-[#0d000d] p-5 sm:p-7 rounded-[2rem] border border-white/5 shadow-xl transition-all duration-500 hover:-translate-y-2 hover:border-secondary/30 group items-start text-left md:items-start md:text-left w-full mx-auto ml-2 -mr-8 sm:mx-0">
                       <div className="flex flex-row items-center justify-start gap-3 mb-3 px-1">
-                        <div className="p-3 rounded-2xl bg-black/10 text-[#3d2a1a] group-hover:rotate-45 transition-transform">
+                        <div className="p-3 rounded-2xl bg-secondary/10 text-secondary group-hover:rotate-45 transition-transform">
                           <Compass className="h-6 w-6" />
                         </div>
-                        <h4 className="font-serif text-xl text-[#1a0f02] font-black group-hover:text-black transition-colors">Life Path</h4>
+                        <h4 className="font-serif text-xl text-white font-black transition-colors">Life Path</h4>
                       </div>
-                      <div className="text-sm text-[#3d2a1a]/80 leading-relaxed flex-grow space-y-4 w-full px-1">
+                      <div className="text-sm leading-relaxed flex-grow space-y-4 w-full px-1">
                         <div>
-                          <p className="text-[#1a0f02] font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
-                            <span className="h-1.5 w-1.5 bg-black/40 rounded-full" />
+                          <p className="text-white font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
+                            <span className="h-1.5 w-1.5 bg-secondary/80 rounded-full" />
                             What it means
                           </p>
-                          <p className="leading-relaxed text-black font-semibold text-[16px] text-left">Your life's main purpose and direction. It reveals what you're meant to achieve and your life journey.</p>
+                          <p className="leading-relaxed text-slate-300 font-medium text-[15px] text-left">Your life's main purpose and direction. It reveals what you're ultimately meant to achieve and your macro life journey.</p>
                         </div>
                         <div>
-                          <p className="text-[#1a0f02] font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
-                            <span className="h-1.5 w-1.5 bg-black/40 rounded-full" />
-                            How to use
+                          <p className="text-white font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
+                            <span className="h-1.5 w-1.5 bg-secondary/80 rounded-full" />
+                            How to apply
                           </p>
-                          <ul className="space-y-1.5 text-black/90 font-medium list-none text-[14px] flex flex-col items-start md:items-start">
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Use when choosing career fields to match your purpose.</li>
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Set your long-term life goals based on your path's direction.</li>
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Ask for alignment with this purpose during big life decisions.</li>
+                          <ul className="space-y-2 text-slate-400 font-medium list-none text-[14px] flex flex-col items-start md:items-start">
+                            <li className="flex gap-2 items-start"><span className="text-secondary font-bold mt-0.5">•</span> <strong>Career Choices:</strong> Aim for industries or roles that naturally fulfill this number's core theme.</li>
+                            <li className="flex gap-2 items-start"><span className="text-secondary font-bold mt-0.5">•</span> <strong>Goal Setting:</strong> When setting 5-year plans, ensure they point towards this number's destination.</li>
                           </ul>
                         </div>
                       </div>
                     </div>
 
                     {/* 3. Expression */}
-                    <div className="flex flex-col h-full bg-gradient-to-br from-amber-400 to-amber-500 p-5 sm:p-7 rounded-[2rem] border-t border-white/40 shadow-[0_10px_30px_rgba(180,140,40,0.15)] shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-amber-500/30 group items-start text-left md:items-start md:text-left w-full mx-auto ml-2 -mr-8 sm:mx-0">
+                    <div className="flex flex-col h-full bg-[#0d000d] p-5 sm:p-7 rounded-[2rem] border border-white/5 shadow-xl transition-all duration-500 hover:-translate-y-2 hover:border-secondary/30 group items-start text-left md:items-start md:text-left w-full mx-auto ml-2 -mr-8 sm:mx-0">
                       <div className="flex flex-row items-center justify-start gap-3 mb-3 px-1">
-                        <div className="p-3 rounded-2xl bg-black/10 text-[#3d2a1a] group-hover:scale-110 transition-transform">
+                        <div className="p-3 rounded-2xl bg-secondary/10 text-secondary group-hover:scale-110 transition-transform">
                           <Palette className="h-6 w-6" />
                         </div>
-                        <h4 className="font-serif text-xl text-[#1a0f02] font-black group-hover:text-black transition-colors">Expression</h4>
+                        <h4 className="font-serif text-xl text-white font-black transition-colors">Expression</h4>
                       </div>
-                      <div className="text-sm text-[#3d2a1a]/80 leading-relaxed flex-grow space-y-4 w-full px-1">
+                      <div className="text-sm leading-relaxed flex-grow space-y-4 w-full px-1">
                         <div>
-                          <p className="text-[#1a0f02] font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
-                            <span className="h-1.5 w-1.5 bg-black/40 rounded-full" />
+                          <p className="text-white font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
+                            <span className="h-1.5 w-1.5 bg-secondary/80 rounded-full" />
                             What it means
                           </p>
-                          <p className="leading-relaxed text-black font-semibold text-[16px] text-left">Your natural talents and special abilities. It reveals how you show yourself and your professional strengths.</p>
+                          <p className="leading-relaxed text-slate-300 font-medium text-[15px] text-left">Your natural talents and special abilities. It reveals how you express yourself and your core professional strengths.</p>
                         </div>
                         <div>
-                          <p className="text-[#1a0f02] font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
-                            <span className="h-1.5 w-1.5 bg-black/40 rounded-full" />
-                            How to use
+                          <p className="text-white font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
+                            <span className="h-1.5 w-1.5 bg-secondary/80 rounded-full" />
+                            How to apply
                           </p>
-                          <ul className="space-y-1.5 text-black/90 font-medium list-none text-[14px] flex flex-col items-start md:items-start">
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Identify and develop the specific skills this number highlights.</li>
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Apply for roles that match your Expression Number's strengths.</li>
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Express yourself socially in ways your number suggests.</li>
+                          <ul className="space-y-2 text-slate-400 font-medium list-none text-[14px] flex flex-col items-start md:items-start">
+                            <li className="flex gap-2 items-start"><span className="text-secondary font-bold mt-0.5">•</span> <strong>Skill Development:</strong> Invest time in honing the specific talents this number highlights.</li>
+                            <li className="flex gap-2 items-start"><span className="text-secondary font-bold mt-0.5">•</span> <strong>Networking:</strong> Present these specific strengths when introducing yourself professionally.</li>
                           </ul>
                         </div>
                       </div>
                     </div>
 
                     {/* 4. Soul Urge */}
-                    <div className="flex flex-col h-full bg-gradient-to-br from-amber-400 to-amber-500 p-5 sm:p-7 rounded-[2rem] border-t border-white/40 shadow-[0_10px_30px_rgba(180,140,40,0.15)] shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-amber-500/30 group items-start text-left md:items-start md:text-left w-full mx-auto ml-2 -mr-8 sm:mx-0">
+                    <div className="flex flex-col h-full bg-[#0d000d] p-5 sm:p-7 rounded-[2rem] border border-white/5 shadow-xl transition-all duration-500 hover:-translate-y-2 hover:border-secondary/30 group items-start text-left md:items-start md:text-left w-full mx-auto ml-2 -mr-8 sm:mx-0">
                       <div className="flex flex-row items-center justify-start gap-3 mb-3 px-1">
-                        <div className="p-3 rounded-2xl bg-black/10 text-[#3d2a1a] group-hover:scale-125 transition-transform">
+                        <div className="p-3 rounded-2xl bg-secondary/10 text-secondary group-hover:scale-125 transition-transform">
                           <Flame className="h-6 w-6" />
                         </div>
-                        <h4 className="font-serif text-xl text-[#1a0f02] font-black group-hover:text-black transition-colors">Soul Urge</h4>
+                        <h4 className="font-serif text-xl text-white font-black transition-colors">Soul Urge</h4>
                       </div>
-                      <div className="text-sm text-[#3d2a1a]/80 leading-relaxed flex-grow space-y-4 w-full px-1">
+                      <div className="text-sm leading-relaxed flex-grow space-y-4 w-full px-1">
                         <div>
-                          <p className="text-[#1a0f02] font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
-                            <span className="h-1.5 w-1.5 bg-black/40 rounded-full" />
+                          <p className="text-white font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
+                            <span className="h-1.5 w-1.5 bg-secondary/80 rounded-full" />
                             What it means
                           </p>
-                          <p className="leading-relaxed text-black font-semibold text-[16px] text-left">Your heart's deepest desires. It shows what truly motivates you and what your soul really wants and needs.</p>
+                          <p className="leading-relaxed text-slate-300 font-medium text-[15px] text-left">Your heart's deepest, hidden desires. It shows what truly motivates you and what your soul needs to feel fulfilled.</p>
                         </div>
                         <div>
-                          <p className="text-[#1a0f02] font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
-                            <span className="h-1.5 w-1.5 bg-black/40 rounded-full" />
-                            How to use
+                          <p className="text-white font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
+                            <span className="h-1.5 w-1.5 bg-secondary/80 rounded-full" />
+                            How to apply
                           </p>
-                          <ul className="space-y-1.5 text-black/90 font-medium list-none text-[14px] flex flex-col items-start md:items-start">
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Make choices that fulfill your soul's needs for inner peace.</li>
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Create daily habits that satisfy your deepest motivations.</li>
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> In relationships, communicate these needs to feel satisfied.</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 5. Personality */}
-                    <div className="flex flex-col h-full bg-gradient-to-br from-amber-400 to-amber-500 p-5 sm:p-7 rounded-[2rem] border-t border-white/40 shadow-[0_10px_30px_rgba(180,140,40,0.15)] shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-amber-500/30 group items-start text-left md:items-start md:text-left w-full mx-auto ml-2 -mr-8 sm:mx-0">
-                      <div className="flex flex-row items-center justify-start gap-3 mb-3 px-1">
-                        <div className="p-3 rounded-2xl bg-black/10 text-[#3d2a1a] group-hover:scale-110 transition-transform">
-                          <VenetianMask className="h-6 w-6" />
-                        </div>
-                        <h4 className="font-serif text-xl text-[#1a0f02] font-black group-hover:text-black transition-colors">Personality</h4>
-                      </div>
-                      <div className="text-sm text-[#3d2a1a]/80 leading-relaxed flex-grow space-y-4 w-full px-1">
-                        <div>
-                          <p className="text-[#1a0f02] font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
-                            <span className="h-1.5 w-1.5 bg-black/40 rounded-full" />
-                            What it means
-                          </p>
-                          <p className="leading-relaxed text-black font-semibold text-[16px] text-left">How others see you when they first meet you. It shows the image you project and your outer character.</p>
-                        </div>
-                        <div>
-                          <p className="text-[#1a0f02] font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
-                            <span className="h-1.5 w-1.5 bg-black/40 rounded-full" />
-                            How to use
-                          </p>
-                          <ul className="space-y-1.5 text-black/90 font-medium list-none text-[14px] flex flex-col items-start md:items-start">
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Dress and behave in ways that enhance your projected image.</li>
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Present yourself according to these strengths in meetings.</li>
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Match your personal brand with what this number projects.</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 6. Friendly/Growth */}
-                    {/* 6. Friendly/Growth */}
-                    <div className="flex flex-col h-full bg-gradient-to-br from-amber-400 to-amber-500 p-5 sm:p-7 rounded-[2rem] border-t border-white/40 shadow-[0_10px_30px_rgba(180,140,40,0.15)] shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-amber-500/30 group items-start text-left md:items-start md:text-left w-full mx-auto ml-2 -mr-8 sm:mx-0">
-                      <div className="flex flex-row items-center justify-start gap-3 mb-3 px-1">
-                        <div className="p-3 rounded-2xl bg-black/10 text-[#3d2a1a] group-hover:-translate-y-1 transition-transform">
-                          <HeartHandshake className="h-6 w-6" />
-                        </div>
-                        <h4 className="font-serif text-xl text-[#1a0f02] font-black group-hover:text-black transition-colors">Relationship Keys</h4>
-                      </div>
-                      <div className="text-sm text-[#3d2a1a]/80 leading-relaxed flex-grow space-y-4 w-full px-1">
-                        <div>
-                          <p className="text-[#1a0f02] font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
-                            <span className="h-1.5 w-1.5 bg-black/40 rounded-full" />
-                            What it means
-                          </p>
-                          <p className="leading-relaxed text-black font-semibold text-[16px] text-left">Your compatibility with others. It shows which numbers work well and which need extra effort.</p>
-                        </div>
-                        <div>
-                          <p className="text-[#1a0f02] font-black uppercase tracking-[0.15em] text-[13px] mb-2 flex items-center justify-start gap-2">
-                            <span className="h-1.5 w-1.5 bg-black/40 rounded-full" />
-                            Practical Application
-                          </p>
-                          <ul className="space-y-1.5 text-black/90 font-medium list-none text-[14px] flex flex-col items-start md:items-start">
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Check partner compatibility for business or personal life.</li>
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Adjust communication style based on number synergy levels.</li>
-                            <li className="flex gap-2 items-start"><span className="text-amber-800 font-bold mt-0.5">•</span> Use compatible numbers for team harmony and hiring.</li>
+                          <ul className="space-y-2 text-slate-400 font-medium list-none text-[14px] flex flex-col items-start md:items-start">
+                            <li className="flex gap-2 items-start"><span className="text-secondary font-bold mt-0.5">•</span> <strong>Relationship Boundaries:</strong> Communicate these underlying needs to your partner.</li>
+                            <li className="flex gap-2 items-start"><span className="text-secondary font-bold mt-0.5">•</span> <strong>Burnout Prevention:</strong> If you feel lost, check if your current lifestyle violates this number's needs.</li>
                           </ul>
                         </div>
                       </div>
@@ -1728,59 +1854,64 @@ export function ResultPreview({
                 </div>
 
                 {/* --- LUCKY MATRIX SECTION --- */}
-                <div id="lh-sec-02" className="space-y-10 p-5 sm:p-8 md:p-14 rounded-[2.5rem] sm:rounded-[3rem] bg-amber-50/[0.4] border border-amber-100 relative overflow-hidden backdrop-blur-sm group/section">
-                  <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-600/5 rounded-full blur-[100px] -ml-48 -mb-48 group-hover/section:bg-orange-600/10 transition-all duration-700" />
+                <div id="lh-sec-02" className="space-y-10 p-5 sm:p-8 md:p-14 rounded-[2.5rem] sm:rounded-[3rem] bg-[#0a0505] border border-white/5 relative overflow-hidden backdrop-blur-sm group/section">
+                  <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-500/5 rounded-full blur-[100px] -ml-48 -mb-48 group-hover/section:bg-amber-500/10 transition-all duration-700" />
                   <div className="relative z-10 space-y-4 flex flex-col items-center justify-center text-center w-full">
                     <div className="flex flex-col items-center justify-center gap-4 w-full">
-                      <div className="h-1.5 md:h-2.5 w-12 md:w-16 bg-amber-600 rounded-full shadow-[0_4px_10px_rgba(217,119,6,0.2)]" />
-                      <h3 className="text-2xl sm:text-3xl md:text-4xl font-sans font-black text-[#1a0f02] uppercase tracking-tight max-w-md">02. The Lucky Matrix Deep Dive</h3>
+                      <div className="h-1.5 md:h-2.5 w-12 md:w-16 bg-amber-500 rounded-full shadow-[0_4px_10px_rgba(217,119,6,0.2)]" />
+                      <h3 className="text-2xl sm:text-3xl md:text-4xl font-sans font-black text-white uppercase tracking-tight max-w-md">02. The Lucky Matrix</h3>
                     </div>
-                    <p className="text-slate-500 text-sm sm:text-base max-w-xl font-medium px-2 mx-auto">Your personal numeric 'cheat codes' to unlock manifestation and opportunity.</p>
+                    <p className="text-slate-400 text-sm sm:text-base max-w-xl font-medium px-2 mx-auto">Your personal numeric 'cheat codes'. Apply them to your environment to unlock manifestation.</p>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4 md:gap-8 relative z-10 w-full px-1 sm:px-0">
                     {/* 1. Description Card */}
-                    <div className="p-5 sm:p-7 rounded-[2rem] bg-gradient-to-br from-amber-400 to-amber-500 border-t border-white/40 shadow-xl hover:-translate-y-2 transition-all duration-500 group -ml-1 -mr-5 sm:mx-0">
+                    <div className="p-5 sm:p-7 rounded-[2rem] bg-[#0d000d] border border-white/5 shadow-xl hover:-translate-y-2 hover:border-secondary/30 transition-all duration-500 group -ml-1 -mr-5 sm:mx-0">
                       <div className="flex flex-row items-center gap-3 mb-3">
-                        <div className="p-3 rounded-2xl bg-black/10 text-[#1a0f02]">
+                        <div className="p-3 rounded-2xl bg-secondary/10 text-secondary">
                           <Grid3X3 className="h-6 w-6" />
                         </div>
-                        <h4 className="font-serif text-xl text-[#1a0f02] font-black group-hover:text-black transition-colors">What is the Matrix?</h4>
+                        <h4 className="font-serif text-xl text-white font-black transition-colors">What is the Matrix?</h4>
                       </div>
-                      <p className="text-sm text-[#3d2a1a] leading-relaxed font-medium">
-                        The Lucky Matrix consists of 4 unique frequencies derived from the intersection of your name and DOB. They act as <strong className="text-black">Vibrational Magnets</strong>. When you align your environment with these numbers, luck increases.
+                      <p className="text-sm text-slate-300 leading-relaxed font-medium mb-4">
+                        The Lucky Matrix consists of 4 unique frequencies derived from the intersection of your name and DOB. They act as <strong className="text-white">Vibrational Magnets</strong>. When you align your external environment with these numbers, synchronicities increase.
                       </p>
                     </div>
 
                     {/* 2. Strategy Card */}
-                    <div className="p-5 sm:p-7 rounded-[2rem] bg-[#1a0f02] border border-amber-500/20 text-white shadow-2xl relative overflow-hidden group hover:-translate-y-2 transition-all duration-500 -ml-1 -mr-5 sm:mx-0">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl opacity-50 group-hover:opacity-80 transition-all" />
+                    <div className="p-5 sm:p-7 rounded-[2rem] bg-[#0d000d] border border-secondary/30 text-white shadow-2xl relative overflow-hidden group hover:-translate-y-2 hover:border-secondary transition-all duration-500 -ml-1 -mr-5 sm:mx-0">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl transition-all" />
                       <div className="flex flex-row items-center gap-3 mb-3 relative z-10">
-                        <div className="p-3 rounded-2xl bg-amber-400/10 text-amber-400">
+                        <div className="p-3 rounded-2xl bg-amber-500/20 text-amber-500">
                           <Target className="h-6 w-6" />
                         </div>
-                        <h4 className="font-black text-amber-400 uppercase tracking-widest text-[11px]">Master Strategy</h4>
+                        <h4 className="font-black text-amber-500 uppercase tracking-widest text-[11px]">Master Strategy</h4>
                       </div>
-                      <p className="text-sm font-serif italic mb-3 opacity-90 text-amber-50 italic relative z-10">"Manifestation is the art of aligning intent with frequency."</p>
-                      <p className="text-xs text-amber-200/60 leading-snug relative z-10"><strong className="text-amber-400 font-black">PRO TIP:</strong> Sign important documents at times or on dates that match your lucky numbers.</p>
+                      <p className="text-sm font-serif italic mb-3 opacity-90 text-white relative z-10">"Manifestation is the art of aligning intent with frequency."</p>
+                      <ul className="space-y-2 text-slate-400 font-medium list-none text-[13px] relative z-10">
+                         <li className="flex gap-2 items-start"><span className="text-amber-500 font-bold mt-0.5">•</span> Use these numbers for pricing, meeting times, or dates.</li>
+                         <li className="flex gap-2 items-start"><span className="text-amber-500 font-bold mt-0.5">•</span> Whenever you see these numbers repeatedly, it's a cosmic "green light" to proceed.</li>
+                      </ul>
                     </div>
 
                     {/* 3. Full-Width Pillars Card */}
-                    <div className="md:col-span-2 p-5 sm:p-10 rounded-[2rem] sm:rounded-[3rem] bg-[#3d2a1a] border border-amber-900/50 shadow-2xl mx-auto w-full">
-                      <h4 className="font-serif text-xl sm:text-2xl md:text-3xl text-amber-100 font-black mb-8 text-center md:text-left tracking-tight">The 4 Pillars of Luck</h4>
+                    <div className="md:col-span-2 p-5 sm:p-10 rounded-[2rem] sm:rounded-[3rem] bg-[#050005] border border-white/5 shadow-2xl mx-auto w-full">
+                      <h4 className="font-serif text-xl sm:text-2xl md:text-3xl text-white font-black mb-8 text-center md:text-left tracking-tight">The 4 Pillars of Luck</h4>
                       <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                         {[
-                          { id: "1", label: "Financial Luck", desc: "Your 'Wealth Magnet' frequency. Best for bank account endings, business launch dates, and investment timing." },
-                          { id: "2", label: "Social Harmony", desc: "The 'Connection Key.' Use this number to schedule important dates, social gatherings, or high-stakes networking events." },
-                          { id: "3", label: "Career Momentum", desc: "Your 'Success Signal.' Align this frequency when starting new professional projects, signing contracts, or starting a new job." },
-                          { id: "4", label: "Personal Soul-Sync", desc: "A frequency for deep inner peace. Best used for personal passwords, meditation timers, and private rituals." }
+                          { id: "1", label: "Financial Luck", desc: "Your 'Wealth Magnet' frequency. Best for bank account endings, business launch dates, pricing strategies, and investment timing." },
+                          { id: "2", label: "Social Harmony", desc: "The 'Connection Key.' Use this number to schedule important dates, select seating at events, or pick apartment/house numbers." },
+                          { id: "3", label: "Career Momentum", desc: "Your 'Success Signal.' Align this frequency when starting new professional projects, signing contracts, or submitting applications." },
+                          { id: "4", label: "Personal Soul-Sync", desc: "A frequency for deep inner peace. Best used for personal passwords, meditation timers, alarms, and private rituals." }
                         ].map((item) => (
-                          <div key={item.id} className="flex flex-col h-full p-5 sm:p-7 rounded-[2rem] bg-amber-400 border-t border-white/40 hover:bg-amber-300 hover:-translate-y-2 transition-all duration-500 group mx-auto w-full sm:mx-0">
+                          <div key={item.id} className="flex flex-col h-full p-5 sm:p-7 rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 hover:border-secondary/30 hover:-translate-y-2 transition-all duration-500 group mx-auto w-full sm:mx-0">
                             <div className="flex flex-row items-center gap-3 mb-3">
-                              <span className="flex-shrink-0 w-8 h-8 rounded-full bg-black/10 text-[#1a0f02] text-xs font-black flex items-center justify-center border border-black/5 group-hover:bg-black group-hover:text-amber-400 transition-all">{item.id}</span>
-                              <span className="font-black text-[#1a0f02] text-lg group-hover:text-black transition-colors uppercase tracking-tight">{item.label}</span>
+                               <div className="p-2.5 rounded-xl bg-secondary/10 text-secondary font-black text-lg group-hover:scale-110 transition-transform">
+                                {item.id}
+                               </div>
+                              <span className="font-black text-white text-lg transition-colors uppercase tracking-tight">{item.label}</span>
                             </div>
-                            <p className="text-sm text-[#3d2a1a] leading-relaxed flex-grow font-semibold">{item.desc}</p>
+                            <p className="text-sm text-slate-300 leading-relaxed flex-grow font-medium">{item.desc}</p>
                           </div>
                         ))}
                       </div>
@@ -1789,48 +1920,67 @@ export function ResultPreview({
                 </div>
 
                 {/* --- PHASE 03: COLOR ALCHEMY SECTION --- */}
-                <div id="lh-sec-03" className="space-y-10 p-5 sm:p-8 md:p-14 rounded-[2.5rem] sm:rounded-[3rem] bg-purple-50/[0.4] border border-purple-100 relative overflow-hidden backdrop-blur-sm group/section">
+                <div id="lh-sec-03" className="space-y-10 p-5 sm:p-8 md:p-14 rounded-[2.5rem] sm:rounded-[3rem] bg-[#0a0505] border border-white/5 relative overflow-hidden backdrop-blur-sm group/section">
                   <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/5 rounded-full blur-[100px] -mr-48 -mt-48 group-hover/section:bg-purple-600/10 transition-all duration-700" />
                   <div className="relative z-10 space-y-4 flex flex-col items-center justify-center text-center w-full">
                     <div className="flex flex-col items-center justify-center gap-4 w-full">
-                      <div className="h-1.5 md:h-2.5 w-12 md:w-16 bg-purple-600 rounded-full shadow-[0_4px_10px_rgba(147,51,234,0.3)]" />
-                      <h3 className="text-2xl sm:text-3xl md:text-4xl font-sans font-black text-slate-900 uppercase tracking-tight max-w-md">03. Color Alchemy & Guidance</h3>
+                      <div className="h-1.5 md:h-2.5 w-12 md:w-16 bg-purple-500 rounded-full shadow-[0_4px_10px_rgba(168,85,247,0.3)]" />
+                      <h3 className="text-2xl sm:text-3xl md:text-4xl font-sans font-black text-white uppercase tracking-tight max-w-md">03. Color Alchemy</h3>
                     </div>
-                    <p className="text-slate-500 text-sm sm:text-base max-w-xl font-medium px-2 mx-auto">Harness the power of visible frequencies to shield your aura and project charisma.</p>
+                    <p className="text-slate-400 text-sm sm:text-base max-w-xl font-medium px-2 mx-auto">Harness the power of visible frequencies to shield your aura and project charisma.</p>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4 md:gap-8 relative z-10 w-full px-1 sm:px-0">
-                    <div className="flex flex-col h-full bg-gradient-to-br from-amber-400 to-amber-500 p-5 sm:p-7 rounded-[2rem] border-t border-white/40 shadow-xl hover:-translate-y-2 transition-all duration-500 group -ml-1 -mr-5 sm:mx-0">
+                    <div className="flex flex-col h-full bg-[#0d000d] border border-white/5 p-5 sm:p-7 rounded-[2rem] shadow-xl hover:-translate-y-2 hover:border-emerald-500/30 transition-all duration-500 group -ml-1 -mr-5 sm:mx-0">
                       <div className="flex flex-row items-center gap-3 mb-3">
-                        <div className="p-3.5 rounded-2xl bg-black/10 text-[#1a0f02] group-hover:bg-black group-hover:text-amber-400 transition-all">
+                        <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
                           <Palette className="h-6 w-6" />
                         </div>
-                        <h4 className="font-serif text-xl text-[#1a0f02] font-black group-hover:text-black transition-colors">Supportive Tones</h4>
+                        <h4 className="font-serif text-xl text-white font-black transition-colors">Supportive Tones</h4>
                       </div>
-                      <p className="text-[11px] font-black text-[#3d2a1a]/60 uppercase tracking-[0.2em] mb-2">The "Auric Shield"</p>
-                      <p className="text-sm text-[#3d2a1a]/80 leading-relaxed group-hover:text-black transition-colors flex-grow font-semibold">
-                        These are your <strong className="text-black">Power Frequencies.</strong> Wear them when you need to lead, persuade, or stand out. They act as a vibrational battery.
-                      </p>
+                      <p className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-3">The "Auric Shield"</p>
+                      <div className="space-y-4 flex-grow">
+                         <p className="text-sm text-slate-300 leading-relaxed font-medium">
+                           These are your <strong className="text-white">Power Frequencies.</strong> They resonate with your core numbers and act as a vibrational battery.
+                         </p>
+                         <div>
+                            <p className="text-white font-black uppercase tracking-[0.1em] text-[12px] mb-2">How to apply:</p>
+                            <ul className="space-y-2 text-slate-400 text-[13px] font-medium">
+                               <li className="flex gap-2"><span className="text-emerald-500">•</span> Wear them on important days (interviews, dates).</li>
+                               <li className="flex gap-2"><span className="text-emerald-500">•</span> Paint a feature wall in your workspace this color.</li>
+                               <li className="flex gap-2"><span className="text-emerald-500">•</span> Use them for your brand logo or website theme.</li>
+                            </ul>
+                         </div>
+                      </div>
                     </div>
 
-                    <div className="flex flex-col h-full bg-gradient-to-br from-amber-400 to-amber-500 p-5 sm:p-7 rounded-[2rem] border-t border-white/40 shadow-xl hover:-translate-y-2 transition-all duration-500 group -ml-1 -mr-5 sm:mx-0">
+                    <div className="flex flex-col h-full bg-[#0d000d] border border-white/5 p-5 sm:p-7 rounded-[2rem] shadow-xl hover:-translate-y-2 hover:border-red-500/30 transition-all duration-500 group -ml-1 -mr-5 sm:mx-0">
                       <div className="flex flex-row items-center gap-3 mb-3">
-                        <div className="p-3.5 rounded-2xl bg-black/10 text-[#1a0f02] group-hover:bg-black group-hover:text-amber-400 transition-all">
+                        <div className="p-3.5 rounded-2xl bg-red-500/10 text-red-400 group-hover:scale-110 transition-transform">
                           <Zap className="h-6 w-6" />
                         </div>
-                        <h4 className="font-serif text-xl text-[#1a0f02] font-black group-hover:text-black transition-colors">Challenging Tones</h4>
+                        <h4 className="font-serif text-xl text-white font-black transition-colors">Challenging Tones</h4>
                       </div>
-                      <p className="text-[11px] font-black text-[#3d2a1a]/60 uppercase tracking-[0.2em] mb-2">The "Energy Leak"</p>
-                      <p className="text-sm text-[#3d2a1a]/80 leading-relaxed group-hover:text-black transition-colors flex-grow font-semibold">
-                        These vibrations clash with your frequency. Avoid them when feeling low, as they can "drain" your aura's battery.
-                      </p>
+                      <p className="text-[11px] font-black text-red-400 uppercase tracking-[0.2em] mb-3">The "Energy Leak"</p>
+                      <div className="space-y-4 flex-grow">
+                         <p className="text-sm text-slate-300 leading-relaxed font-medium">
+                           These vibrations clash with your frequency. They can create subconscious friction and drain your aura's battery.
+                         </p>
+                         <div>
+                            <p className="text-white font-black uppercase tracking-[0.1em] text-[12px] mb-2">How to manage:</p>
+                            <ul className="space-y-2 text-slate-400 text-[13px] font-medium">
+                               <li className="flex gap-2"><span className="text-red-400">•</span> Avoid wearing these as dominant outfit colors.</li>
+                               <li className="flex gap-2"><span className="text-red-400">•</span> Keep them out of your immediate, long-term line of sight (like bedsheets or walls).</li>
+                            </ul>
+                         </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="p-5 rounded-2xl bg-[#1a0f02] text-white flex flex-col md:flex-row items-center gap-5 relative z-10 border border-amber-900/40 shadow-lg">
-                    <div className="h-10 w-10 shrink-0 bg-amber-500/20 rounded-full flex items-center justify-center font-bold text-amber-500 border border-amber-500/30">?</div>
-                    <p className="text-xs text-amber-100/70 italic text-center md:text-left">
-                      <strong className="text-white underline decoration-amber-500/30">Practical Tip:</strong> If you love a Challenging color, use it in small accessories rather than main garments to maintain vibrational integrity.
+                  <div className="p-5 rounded-2xl bg-secondary/10 text-white flex flex-col md:flex-row items-center gap-5 relative z-10 border border-secondary/20 shadow-lg">
+                    <div className="h-10 w-10 shrink-0 bg-secondary/20 rounded-full flex items-center justify-center font-bold text-secondary border border-secondary/30">!</div>
+                    <p className="text-xs text-secondary/80 text-center md:text-left font-medium">
+                      <strong className="text-secondary uppercase tracking-widest mr-2">Practical Tip:</strong> If you absolutely love a Challenging color, wear it as a small accessory (like a watch strap or socks) rather than a main garment. This minimizes the frequency clash.
                     </p>
                   </div>
                 </div>
@@ -1838,7 +1988,7 @@ export function ResultPreview({
                 <div className="flex justify-center pb-12">
                   <Button
                     onClick={() => setIsLearningHubOpen(false)}
-                    className="group relative inline-flex items-center gap-3 px-12 py-6 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-600 text-white font-black text-sm uppercase tracking-widest overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(168,85,247,0.4)]"
+                    className="group relative inline-flex items-center gap-3 px-12 py-6 rounded-full bg-gradient-to-r from-amber-500 to-amber-700 text-black font-black text-sm uppercase tracking-widest overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(217,119,6,0.4)]"
                   >
                     <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <span className="relative z-10">I Understand My Path</span>
@@ -1852,7 +2002,7 @@ export function ResultPreview({
 
         {/* --- Magic Share Modal --- */}
         <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
-          <DialogContent className="max-w-[500px] w-[92vw] p-0 overflow-hidden border border-white/10 bg-[#0a0518] shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-[2.5rem] !duration-500 [&>button:last-child]:hidden">
+          <DialogContent className="max-w-[500px] w-[92vw] p-0 overflow-hidden border border-white/10 bg-[#130b02] shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-[2.5rem] !duration-500 [&>button:last-child]:hidden">
             {/* Custom Premium Close Button */}
             <div className="absolute top-4 right-4 z-[100]">
               <button
@@ -1970,8 +2120,9 @@ export function ResultPreview({
 
             {/* Premium Mobile Controls - Top of Menu */}
             <div className="flex flex-col gap-5 mb-10">
-              <div className="flex justify-center w-full">
-                <LanguageTranslator id="google_translate_element_mobile_menu" isLarge={true} />
+
+              <div className="flex justify-center mb-2">
+                <LanguageTranslator id="google_translate_report_mobile" isLarge={true} />
               </div>
 
               <button
@@ -1993,8 +2144,7 @@ export function ResultPreview({
                 { id: "soul", icon: VenetianMask, label: "Soul Analysis" },
                 { id: "color", icon: Palette, label: "Color Alchemy" },
                 { id: "blueprint", icon: LayoutGrid, label: "Strategic Roadmap" },
-                { id: "remedies", icon: Gem, label: "Sacred Remedies" },
-                { id: "blog", icon: BookOpen, label: "Wisdom Blog", isLink: true }
+                { id: "remedies", icon: Gem, label: "Sacred Remedies" }
               ].map((item, i) => (
                 item.isLink ? (
                   <Link
@@ -2029,6 +2179,22 @@ export function ResultPreview({
               ))}
             </div>
 
+            <div className="mt-8">
+              <button 
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  handleDownloadPDF();
+                }}
+                className="w-full flex items-center p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors group"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/20 text-amber-500 mb-2">
+                  <Download className="h-6 w-6" />
+                </div>
+                <span className="text-lg font-black text-white uppercase tracking-[0.2em] ml-4">Download PDF</span>
+                <ChevronRight className="h-5 w-5 ml-auto text-amber-500/50" />
+              </button>
+            </div>
+
             {/* Learning Hub Button at Bottom */}
             <div className="mt-auto pb-6">
               <button
@@ -2048,3 +2214,5 @@ export function ResultPreview({
     </div>
   );
 }
+
+export default ResultPreview;

@@ -1,0 +1,30 @@
+[
+  {
+    "step": 1423,
+    "name": "multi_replace_file_content",
+    "args": {
+      "Description": "\"Adding PDF generation state and handlers\"",
+      "Instruction": "\"Add html2canvas and jsPDF imports. Add state and handleDownloadPDF function inside ResultPreview component.\"",
+      "ReplacementChunks": "[{\"AllowMultiple\":false,\"EndLine\":26,\"ReplacementContent\":\"  MapPin,\\n  Loader2\\n} from \\\"lucide-react\\\";\\nimport html2canvas from \\\"html2canvas\\\";\\nimport jsPDF from \\\"jspdf\\\";\\n\\nconst NUMEROLOGY_CONTENT = {\",\"StartLine\":24,\"TargetContent\":\"  MapPin\\n} from \\\"lucide-react\\\";\\n\\nconst NUMEROLOGY_CONTENT = {\"},{\"AllowMultiple\":false,\"EndLine\":112,\"ReplacementContent\":\"  const [copied, setCopied] = React.useState(false);\\n  const [isDownloadingPDF, setIsDownloadingPDF] = React.useState(false);\\n\\n  const [isLogoSpinning, setIsLogoSpinning] = React.useState(false);\\n\\n  const handleDownloadPDF = async () => {\\n    if (isDownloadingPDF) return;\\n    setIsDownloadingPDF(true);\\n    try {\\n      const element = document.getElementById(\\\"top\\\");\\n      if (!element) return;\\n      \\n      const canvas = await html2canvas(element, {\\n        scale: 2,\\n        useCORS: true,\\n        backgroundColor: \\\"#0a0518\\\",\\n        windowWidth: 1200\\n      });\\n\\n      const imgData = canvas.toDataURL(\\\"image/jpeg\\\", 0.95);\\n      const pdf = new jsPDF(\\\"p\\\", \\\"mm\\\", \\\"a4\\\");\\n      const pdfWidth = pdf.internal.pageSize.getWidth();\\n      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;\\n      \\n      let heightLeft = pdfHeight;\\n      let position = 0;\\n\\n      pdf.addImage(imgData, \\\"JPEG\\\", 0, position, pdfWidth, pdfHeight);\\n      heightLeft -= pdf.internal.pageSize.getHeight();\\n\\n      while (heightLeft >= 0) {\\n        position = heightLeft - pdfHeight;\\n        pdf.addPage();\\n        pdf.addImage(imgData, \\\"JPEG\\\", 0, position, pdfWidth, pdfHeight);\\n        heightLeft -= pdf.internal.pageSize.getHeight();\\n      }\\n\\n      const filename = reading ? `${reading.name.replace(/\\\\\\\\s+/g, \\\"_\\\")}_Cosmic_Blueprint.pdf` : \\\"NumGuru_Report.pdf\\\";\\n      pdf.save(filename);\\n    } catch (error) {\\n      console.error(\\\"PDF generation failed:\\\", error);\\n    } finally {\\n      setIsDownloadingPDF(false);\\n    }\\n  };\\n\\n  const handleLogoClick = (e: React.MouseEvent) => {\",\"StartLine\":103,\"TargetContent\":\"  const [co\n<truncated 172 bytes>",
+      "TargetFile": "\"d:\\\\NumGuru\\\\src\\\\components\\\\ResultPreview.tsx\"",
+      "toolAction": "\"Adding PDF state and handlers\"",
+      "toolSummary": "\"Edit file\""
+    }
+  },
+  {
+    "step": 1438,
+    "name": "replace_file_content",
+    "args": {
+      "AllowMultiple": "false",
+      "Description": "\"Add Download PDF button to mobile menu\"",
+      "EndLine": "2054",
+      "Instruction": "\"Add the Download PDF button below the Share Profile button in the mobile menu overlay.\"",
+      "ReplacementContent": "\"              <button\\n                onClick={() => {\\n                  setIsMobileMenuOpen(false);\\n                  setIsShareModalOpen(true);\\n                }}\\n                className=\\\"w-full h-14 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 text-[#1a0f02] font-black uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all shadow-[0_0_25px_rgba(234,179,8,0.3)] border border-amber-300/30\\\"\\n              >\\n                <Share2 className=\\\"h-5 w-5 text-amber-900\\\" />\\n                Share Profile\\n              </button>\\n\\n              {isUnlocked && (\\n                <button\\n                  onClick={() => {\\n                    setIsMobileMenuOpen(false);\\n                    handleDownloadPDF();\\n                  }}\\n                  disabled={isDownloadingPDF}\\n                  className=\\\"w-full h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-black uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all shadow-[0_0_25px_rgba(16,185,129,0.3)] border border-emerald-400/30\\\"\\n                >\\n                  {isDownloadingPDF ? <Loader2 className=\\\"h-5 w-5 animate-spin\\\" /> : <Download className=\\\"h-5 w-5\\\" />}\\n                  {isDownloadingPDF ? \\\"Generating...\\\" : \\\"Download PDF\\\"}\\n                </button>\\n              )}\\n            </div>\"",
+      "StartLine": "2043",
+      "TargetContent": "\"              <button\\n                onClick={() => {\\n                  setIsMobileMenuOpen(false);\\n                  setIsShareModalOpen(true);\\n                }}\\n                className=\\\"w-full h-14 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 text-[#1a0f02] font-black uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all shadow-[0_0_25px_rgba(234,179,8,0.3)] border border-amber-300/30\\\"\\n              >\\n                <Share2 className=\\\"h-5 w-5 text-amber-900\\\" />\\n                Share Profile\\n              </button>\\n            </div>\"",
+      "TargetFile": "\"d:\\\\NumGuru\\\\src\\\\components\\\\ResultPreview.tsx\"",
+      "toolAction": "\"Adding Mobile PDF button\"",
+      "toolSummary": "\"Edit ResultPreview.tsx\""
+    }
+  }
+]

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Orbit, Calendar, Clock, ChevronRight, Sparkles, Moon, Search, X, ChevronLeft, Star } from "lucide-react";
 import { Footer } from "@/components/Footer";
+import { Navbar } from "@/components/Navbar";
 import {
   Carousel,
   CarouselContent,
@@ -243,20 +244,7 @@ const Blog = () => {
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-[0.05]" />
       </div>
 
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#020202]/80 backdrop-blur-2xl border-b border-white/5 h-16 md:h-20">
-        <div className="max-w-7xl mx-auto h-full px-4 md:px-10 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 md:gap-3 group active:scale-95">
-            <div className="p-1.5 md:p-2 rounded-lg md:rounded-xl bg-secondary/10 border border-secondary/20 group-hover:bg-secondary/20 transition-all duration-500">
-              <Orbit className="h-4 w-4 md:h-5 md:w-5 text-secondary group-hover:rotate-180 transition-transform duration-1000" />
-            </div>
-            <span className="font-serif font-black text-xl md:text-2xl text-white tracking-tighter">NumGuru</span>
-          </Link>
-          <Link to="/" className="flex items-center gap-2 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-white/50 hover:text-white transition-all group">
-            <ArrowLeft className="h-3.5 w-3.5 md:h-4 md:w-4 group-hover:-translate-x-1 transition-transform" />
-            Return Home
-          </Link>
-        </div>
-      </nav>
+      <Navbar />
 
       <main className="relative pt-24 md:pt-40 pb-32 px-4 md:px-10">
         <div className="max-w-6xl mx-auto">

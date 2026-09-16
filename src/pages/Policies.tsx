@@ -1,7 +1,8 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Orbit, Shield, FileText, RefreshCw } from "lucide-react";
+import { ArrowLeft, Orbit, ShieldCheck, FileText, RefreshCcw } from "lucide-react";
 import { Footer } from "@/components/Footer";
+import { Navbar } from "@/components/Navbar";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface PolicyLayoutProps {
@@ -24,21 +25,7 @@ const PolicyLayout: React.FC<PolicyLayoutProps> = ({ title, lastUpdated, childre
                 <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
             </div>
 
-            <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/5 h-16 md:h-20">
-                <div className="max-w-7xl mx-auto h-full px-4 md:px-8 flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-2 group transition-all active:scale-95">
-                        <div className="p-2 rounded-xl bg-secondary/10 border border-secondary/20">
-                            <Orbit className="h-5 w-5 text-secondary group-hover:rotate-180 transition-transform duration-1000" />
-                        </div>
-                        <span className="font-serif font-black text-xl text-white tracking-tight">NumGuru</span>
-                    </Link>
-
-                    <Link to="/" className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors group">
-                        <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                        Back to Home
-                    </Link>
-                </div>
-            </nav>
+            <Navbar />
 
             <main className="relative pt-32 pb-24 px-4">
                 <div className="max-w-4xl mx-auto">

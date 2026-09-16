@@ -1,0 +1,635 @@
+diff --git a/src/pages/Index.tsx b/src/pages/Index.tsx
+index 9afbcb0..49854fa 100644
+--- a/src/pages/Index.tsx
++++ b/src/pages/Index.tsx
+@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
+ import { Link } from "react-router-dom";
+ import { ResultPreview } from "@/components/ResultPreview";
+ import { generateReading, NumerologyReading } from "@/lib/numerology";
+-import { useRazorpay } from "@/hooks/useRazorpay";
+ import { useToast } from "@/hooks/use-toast";
+ import LanguageTranslator from "@/components/LanguageTranslator";
+ import { useCurrency } from "@/contexts/CurrencyContext";
+@@ -183,14 +182,13 @@ const Index = () => {
+   const [isSampleResultOpen, setIsSampleResultOpen] = useState(false);
+   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+   const [freeReport, setFreeReport] = useState<FreeNumerologyReport | null>(null);
+-
+-  const { initiatePayment } = useRazorpay();
+   const { toast } = useToast();
+ 
+   const today = useMemo(() => new Date(), []);
+   const minDob = useMemo(() => new Date(1900, 0, 1), []);
+ 
+   const [isBrowseOpen, setIsBrowseOpen] = useState(false);
++  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+ 
+   const sections = [
+     { id: "top", label: "Home", icon: Moon },
+@@ -198,7 +196,7 @@ const Index = () => {
+     { id: "samples", label: "Free Sample", icon: Sparkles },
+     { id: "premium-form-container", label: "Personal Audit", icon: Fingerprint },
+     { id: "remedies", label: "Sacred Remedies", icon: Sparkles },
+-    { id: "what-is-numerology", label: "The Science", icon: BookOpen },
++    { id: "what-is-numerology", label: "The Science", icon: BookOpen, href: "/science" },
+     { id: "how-it-works", label: "How It Works", icon: Activity },
+     { id: "testimonials", label: "Soul Reviews", icon: Star },
+     { id: "cta", label: "Final Reveal", icon: Crown },
+@@ -325,58 +323,195 @@ const Index = () => {
+     setReading(newReading);
+     setIsLoading(true);
+ 
+-    initiatePayment(
+-      amount,
+-      currency,
+-      name,
+-      () => {
+-        setIsUnlocked(true);
+-        setIsLoading(false);
+-        setState("preview");
+-        setIsSampleResultOpen(false); // Ensure modal is closed
+-        window.scrollTo({ top: 0, behavior: "instant" }); // Instant scroll to top for new view
+-        toast({
+-          title: "Payment Successful! 🎉",
+-          description: "Your full report is now unlocked.",
+-        });
+-      },
+-      (error) => {
+-        setIsLoading(false);
++    // Mock successful payment since Razorpay was removed
++    setTimeout(() => {
++      setIsUnlocked(true);
++      setIsLoading(false);
++      setState("preview");
++      setIsSampleResultOpen(false); // Ensure modal is closed
++      window.scrollTo({ top: 0, behavior: "instant" }); // Instant scroll to top for new view
++      toast({
++        title: "Report Unlocked! 🎉",
++        description: "Your full report is now unlocked.",
++  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
++
++  const sections = [
++    { id: "top", label: "Home", icon: Moon },
++    { id: "insights", label: "Cosmic Insights", icon: Orbit },
++    { id: "samples", label: "Free Sample", icon: Sparkles },
++    { id: "premium-form-container", label: "Personal Audit", icon: Fingerprint },
++    { id: "remedies", label: "Sacred Remedies", icon: Sparkles },
++    { id: "what-is-numerology", label: "The Science", icon: BookOpen, href: "/science" },
++    { id: "how-it-works", label: "How It Works", icon: Activity },
++    { id: "testimonials", label: "Soul Reviews", icon: Star },
++    { id: "cta", label: "Final Reveal", icon: Crown },
++  ];
++
++  const scrollToSection = (id: string) => {
++    if (id === "top") {
++      window.scrollTo({ top: 0, behavior: "smooth" });
++      setIsBrowseOpen(false);
++      return;
++    }
++    const element = document.getElementById(id);
++    if (element) {
++      element.scrollIntoView({ behavior: "smooth", block: "start" });
++      setIsBrowseOpen(false);
++    }
++  };
++
++  // Lock body scroll when Browse is open
++  useEffect(() => {
++    if (isBrowseOpen) {
++      document.body.style.overflow = "hidden";
++    } else {
++      document.body.style.overflow = "auto";
++    }
++    return () => {
++      document.body.style.overflow = "auto";
++    };
++  }, [isBrowseOpen]);
++
++  useEffect(() => {
++    // Enforce Dark Mode Only
++    document.documentElement.classList.add("dark");
++
++    // Handle URL cleanup and toast after synchronous load
++    const params = new URLSearchParams(window.location.search);
++    if (params.get("v") || params.get("data")) {
++      window.history.replaceState({}, document.title, window.location.pathname);
++      if (reading) {
+         toast({
+-          title: "Payment Unsuccessful",
+-          description: error,
+-          variant: "destructive",
++          title: "Cosmic Report Loaded! ✨",
++          description: `Welcome back, ${reading.name}. Your unique vibration has been restored.`,
+         });
+       }
+-    );
++    }
++  }, []);
++
++
++
++  // Session Persistence: Save to localStorage (Only if not in landing state)
++  useEffect(() => {
++    if (reading) {
++      localStorage.setItem("numerology_session", JSON.stringify({
++        reading,
++        isUnlocked,
++        state
++      }));
++    }
++  }, [isUnlocked, reading, state]);
++
++  // Handle auto-scroll to top when transitioning to preview state
++  useEffect(() => {
++    if (state === "preview") {
++      document.body.style.overflow = "auto"; // Force reset body overflow
++      window.scrollTo({ top: 0, behavior: "instant" });
++      // Extra safety: some browsers need a small delay after render
++      const timeoutId = setTimeout(() => {
++        window.scrollTo({ top: 0, behavior: "instant" });
++        document.body.style.overflow = "auto";
++      }, 100);
++      return () => clearTimeout(timeoutId);
++    }
++  }, [state]);
++
++  const handleReset = () => {
++    localStorage.removeItem("numerology_session");
++    setReading(null);
++    setIsUnlocked(false);
++    setState("landing");
++    setFullName("");
++    setFullDob(undefined);
++    scrollToTop();
++  };
++
++  // Removed toggleTheme to enforce dark mode only
++
++  const handleFormSubmit = (name: string, dob: Date) => {
++    const newReading = generateReading(name, dob);
++    setReading(newReading);
++    setState("preview");
++  };
++
++  const handleSampleSubmit = (e: React.FormEvent) => {
++    e.preventDefault();
++    if (!sampleDob) {
++      toast({
++        title: "Invalid Date",
++        description: "Please select a date of birth.",
++        variant: "destructive",
++      });
++      return;
++    }
++
++    const report = generateFreeReportFromDob(sampleDob);
++    setFreeReport(report);
++    setIsSampleResultOpen(true);
++  };
++
++  const handleFullSubmit = (e: React.FormEvent) => {
++    e.preventDefault();
++
++    const name = fullName.trim();
++    if (!name) return;
++    if (!fullDob) {
++      toast({
++        title: "Invalid Date",
++        description: "Please select a date of birth.",
++        variant: "destructive",
++      });
++      return;
++    }
++
++    const newReading = generateReading(name, fullDob);
++    setReading(newReading);
++    setIsLoading(true);
++
++    // Mock successful payment since Razorpay was removed
++    setTimeout(() => {
++      setIsUnlocked(true);
++      setIsLoading(false);
++      setState("preview");
++      setIsSampleResultOpen(false); // Ensure modal is closed
++      window.scrollTo({ top: 0, behavior: "instant" }); // Instant scroll to top for new view
++      toast({
++        title: "Report Unlocked! 🎉",
++        description: "Your full report is now unlocked.",
++      });
++    }, 1000);
++  };
++
++  
++  const handlePaymentSuccess = () => {
++    setIsUnlocked(true);
++    setIsLoading(false);
++    setState("preview");
++    window.scrollTo({ top: 0, behavior: "instant" });
++    toast({
++      title: "Report Unlocked! 🎉",
++      description: "Your full numerology reading is now unlocked.",
++    });
+   };
+ 
+   const handleUnlock = () => {
++    setIsCheckoutOpen(true);
++  };
++
++  /*
+     if (!reading) return;
+ 
+     setIsLoading(true);
+-    initiatePayment(
+-      amount,
+-      currency,
+-      reading.name,
+-      () => {
+-        setIsUnlocked(true);
+-        setIsLoading(false);
+-        window.scrollTo({ top: 0, behavior: "instant" });
+-        toast({
+-          title: "Payment Successful! 🎉",
+-          description: "Your full numerology reading is now unlocked.",
+-        });
+-      },
+-      (error) => {
+-        setIsLoading(false);
+-        toast({
+-          title: "Payment Unsuccessful",
+-          description: error,
+-          variant: "destructive",
+-        });
+-      }
+-    );
++    // Mock successful payment since Razorpay was removed
++    setTimeout(() => {
++      setIsUnlocked(true);
++      setIsLoading(false);
++      window.scrollTo({ top: 0, behavior: "instant" });
++      toast({
++        title: "Report Unlocked! 🎉",
++        description: "Your full numerology reading is now unlocked.",
++      });
++    }, 1000);
+   };
+ 
+   if (state === "landing" || !reading) {
+@@ -933,9 +1068,8 @@ const Index = () => {
+             <div className="space-y-4 relative z-10 flex-grow">
+               {[
+                 { label: "Try Free Sample", icon: Gift, action: () => { scrollToTop(); setIsMobileMenuOpen(false); } },
+-                { label: "What is Numerology?", icon: Orbit, href: "#what-is-numerology" },
++                { label: "What is Numerology?", icon: Orbit, href: "/science" },
+                 { label: "Premium Report", icon: Crown, href: "#premium-report" },
+-                { label: "User Reviews", icon: Star, href: "#testimonials" },
+                 { label: "Wisdom Blog", icon: BookOpen, href: "/blog" },
+               ].map((item, i) => (
+                 item.action ? (
+@@ -1004,12 +1138,11 @@ const Index = () => {
+                 <span className="font-bold text-2xl tracking-tighter group-hover:text-secondary transition-colors">NumGuru</span>
+               </div>
+ 
+-              <div className="hidden md:flex items-center space-x-6">
+-                <button className="text-sm font-medium hover:text-secondary px-3 py-1.5 rounded-full hover:bg-secondary/5" onClick={scrollToTop}>Try Free Sample</button>
+-                <a className="text-sm font-medium hover:text-secondary px-3 py-1.5 rounded-full hover:bg-secondary/5" href="#what-is-numerology">What is Numerology?</a>
+-                <a className="text-sm font-medium hover:text-secondary px-3 py-1.5 rounded-full hover:bg-secondary/5" href="#premium-report">Premium Report</a>
+-                <a className="text-sm font-medium hover:text-secondary px-3 py-1.5 rounded-full hover:bg-secondary/5" href="#testimonials">Reviews</a>
+-                <Link className="text-sm font-medium hover:text-secondary px-3 py-1.5 rounded-full hover:bg-secondary/5" to="/blog">Blog</Link>
++              <div className="hidden lg:flex items-center gap-8 lg:gap-10">
++                <button className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 hover:text-secondary transition-colors" onClick={scrollToTop}>Free Sample</button>
++                <Link className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 hover:text-secondary transition-colors" to="/science">Science</Link>
++                <a className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 hover:text-secondary transition-colors" href="#premium-report">Premium</a>
++                <Link className="text-xs font-bold uppercase tracking-[0.2em] text-white/60 hover:text-secondary transition-colors" to="/blog">Blog</Link>
+               </div>
+ 
+               <div className="flex items-center gap-4">
+@@ -1581,36 +1714,36 @@ const Index = () => {
+                   <div className="max-w-7xl mx-auto">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                       {[
+-                        { title: "Your Personal Growth Guidance", icon: Compass, label: "Core Path", benefit: "A comprehensive 15+ page breakdown of your life purpose, hidden hurdles, and the master plan for your spiritual and material evolution." },
+-                        { title: "Do This, Avoid This (Guidance)", icon: Lightbulb, label: "Daily Strategy", benefit: "Specific, actionable list of behaviors to embrace and patterns to avoid based on your current numeric phase and planetary influences." },
+-                        { title: "Work Style & Career Environment", icon: Briefcase, label: "Career Map", benefit: "Discover the specific professional settings where you will naturally excel and the industries that best align with your 'Success Frequency'." },
+-                        { title: "Emotional Pattern Decoder", icon: Fingerprint, label: "Soul Logic", benefit: "Deep analysis of why you react emotionally the way you do, helping you gain mastery over your reactions and find lasting inner calm." },
+-                        { title: "Decision-Making Guide", icon: Scale, label: "Success Logic", benefit: "A tactical manual on how to choose your battles, when to hit the accelerator, and when to step back for maximum strategic advantage." },
+-                        { title: "Relationship Communication Style", icon: HeartHandshake, label: "Bond Synergy", benefit: "Decode how you naturally connect with others and learn the secret to resolving friction in your most important personal and professional bonds." }
++                        { title: "Your Personal Growth Guidance", icon: Compass, label: "Core Path", benefit: "A comprehensive 15+ page breakdown of your life purpose, hidden hurdles, and the master plan for your spiritual and material evolution.", bgStyle: "from-[#2a002a]/60 to-[#0d000d]", borderStyle: "border-secondary/30 hover:border-secondary" },
++                        { title: "Do This, Avoid This (Guidance)", icon: Lightbulb, label: "Daily Strategy", benefit: "Specific, actionable list of behaviors to embrace and patterns to avoid based on your current numeric phase and planetary influences.", bgStyle: "from-[#1a103c]/60 to-[#0d000d]", borderStyle: "border-blue-500/30 hover:border-blue-500" },
++                        { title: "Work Style & Career Environment", icon: Briefcase, label: "Career Map", benefit: "Discover the specific professional settings where you will naturally excel and the industries that best align with your 'Success Frequency'.", bgStyle: "from-[#2a1a00]/60 to-[#0d000d]", borderStyle: "border-amber-500/30 hover:border-amber-500" },
++                        { title: "Emotional Pattern Decoder", icon: Fingerprint, label: "Soul Logic", benefit: "Deep analysis of why you react emotionally the way you do, helping you gain mastery over your reactions and find lasting inner calm.", bgStyle: "from-[#0a202a]/60 to-[#0d000d]", borderStyle: "border-cyan-500/30 hover:border-cyan-500" },
++                        { title: "Decision-Making Guide", icon: Scale, label: "Success Logic", benefit: "A tactical manual on how to choose your battles, when to hit the accelerator, and when to step back for maximum strategic advantage.", bgStyle: "from-[#2a001a]/60 to-[#0d000d]", borderStyle: "border-rose-500/30 hover:border-rose-500" },
++                        { title: "Relationship Communication Style", icon: HeartHandshake, label: "Bond Synergy", benefit: "Decode how you naturally connect with others and learn the secret to resolving friction in your most important personal and professional bonds.", bgStyle: "from-[#1a2a00]/60 to-[#0d000d]", borderStyle: "border-emerald-500/30 hover:border-emerald-500" }
+                       ].map((item, i) => (
+-                        <div key={i} className="group relative p-6 rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full">
+-                          <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
++                        <div key={i} className={`group relative p-6 rounded-2xl bg-gradient-to-br ${item.bgStyle} border ${item.borderStyle} transition-all duration-500 hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] flex flex-col h-full hover:-translate-y-1`}>
++                          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
+ 
+                           <div className="relative z-10 flex flex-col h-full">
+                             <div className="mb-4 flex items-center justify-between">
+-                              <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
++                              <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/80 shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:bg-white/10 transition-colors">
+                                 <item.icon className="h-5 w-5" />
+                               </div>
+-                              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">{item.label}</span>
++                              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 group-hover:text-white/80 transition-colors">{item.label}</span>
+                             </div>
+ 
+-                            <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">
++                            <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-white/60 transition-all">
+                               {item.title}
+                             </h4>
+ 
+-                            <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium">
++                            <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium group-hover:text-slate-300 transition-colors">
+                               {item.benefit}
+                             </p>
+ 
+                             <div className="pt-4 border-t border-white/5 mt-auto">
+-                              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black hover:shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all duration-300 cursor-pointer group/unlock">
++                              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-widest group-hover:bg-white group-hover:text-black group-hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all duration-300 cursor-pointer w-fit">
+                                 <Lock className="h-3 w-3" />
+-                                <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock to Read</span>
++                                <span>Unlock to Read</span>
+                               </div>
+                             </div>
+                           </div>
+@@ -1631,40 +1764,48 @@ const Index = () => {
+                   </div>
+ 
+                   <div className="max-w-7xl mx-auto">
+-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+-                      {[
+-                        { title: "Your Power Success Color", icon: Palette, label: "Aura Boost", benefit: "Identify the specific wavelength that amplifies your natural charisma and luck, making you more persuasive in important meetings and social events." },
+-                        { title: "Energy-Draining Colors to Avoid", icon: Zap, label: "Protection", benefit: "Discover which colors create a 'Vibrational Leak' in your aura, causing unnecessary fatigue and slowing your progress during critical moments." },
+-                        { title: "Daily Attire Vibration Tuning", icon: Star, label: "Magnetic", benefit: "Learn the secret of using colors as 'frequency controllers' to stay grounded, protected, and highly magnetic regardless of the environment." }
+-                      ].map((item, i) => (
+-                        <div key={i} className="group relative p-6 rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full">
+-                          <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+-
+-                          <div className="relative z-10 flex flex-col h-full">
+-                            <div className="mb-4 flex items-center justify-between">
+-                              <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+-                                <item.icon className="h-5 w-5" />
++                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
++                      <div className="relative group rounded-3xl overflow-hidden aspect-square lg:aspect-auto lg:h-full min-h-[300px]">
++                        <div className="absolute inset-0 bg-gradient-to-t from-[#0d000d] via-transparent to-transparent z-10" />
++                        <img 
++                          src="/images/color_alchemy.png" 
++                          alt="Color Alchemy Prisma"
++                          className="w-full h-full object-cover border border-white/10 shadow-[0_0_50px_rgba(209,0,209,0.15)] group-hover:scale-105 transition-transform duration-[2000ms]"
++                        />
++                      </div>
++                      
++                      <div className="flex flex-col gap-4">
++                        {[
++                          { title: "Your Power Success Color", icon: Palette, label: "Aura Boost", benefit: "Identify the specific wavelength that amplifies your natural charisma and luck, making you more persuasive in important meetings and social events.", bgStyle: "from-amber-900/30 to-[#0d000d]", borderStyle: "border-amber-500/30 hover:border-amber-500", glow: "hover:shadow-[0_0_30px_rgba(245,158,11,0.15)]", iconColor: "text-amber-500" },
++                          { title: "Energy-Draining Colors to Avoid", icon: Zap, label: "Protection", benefit: "Discover which colors create a 'Vibrational Leak' in your aura, causing unnecessary fatigue and slowing your progress during critical moments.", bgStyle: "from-rose-900/30 to-[#0d000d]", borderStyle: "border-rose-500/30 hover:border-rose-500", glow: "hover:shadow-[0_0_30px_rgba(243,62,98,0.15)]", iconColor: "text-rose-500" },
++                          { title: "Daily Attire Vibration Tuning", icon: Star, label: "Magnetic", benefit: "Learn the secret of using colors as 'frequency controllers' to stay grounded, protected, and highly magnetic regardless of the environment.", bgStyle: "from-purple-900/30 to-[#0d000d]", borderStyle: "border-[#D100D1]/30 hover:border-[#D100D1]", glow: "hover:shadow-[0_0_30px_rgba(209,0,209,0.15)]", iconColor: "text-[#D100D1]" }
++                        ].map((item, i) => (
++                          <div key={i} className={`group relative p-6 rounded-2xl bg-gradient-to-br ${item.bgStyle} border ${item.borderStyle} transition-all duration-500 ${item.glow} flex flex-col hover:-translate-x-2`}>
++                            <div className="relative z-10 flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center">
++                              <div className={`shrink-0 w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${item.iconColor} shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:bg-white/10 transition-colors`}>
++                                <item.icon className="h-6 w-6" />
+                               </div>
+-                              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">{item.label}</span>
+-                            </div>
+-
+-                            <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">
+-                              {item.title}
+-                            </h4>
+-
+-                            <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium">
+-                              {item.benefit}
+-                            </p>
+-
+-                            <div className="pt-4 border-t border-white/5 mt-auto">
+-                              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black hover:shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all duration-300 cursor-pointer group/unlock">
+-                                <Lock className="h-3 w-3" />
+-                                <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock to Read</span>
++                              <div className="flex-grow">
++                                <div className="mb-1 flex items-center gap-3">
++                                  <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${item.iconColor}`}>{item.label}</span>
++                                </div>
++                                <h4 className="text-lg font-sans font-black text-white mb-2 tracking-tight leading-tight">
++                                  {item.title}
++                                </h4>
++                                <p className="text-slate-400 text-sm leading-relaxed font-medium">
++                                  {item.benefit}
++                                </p>
++                              </div>
++                              <div className="shrink-0 pt-4 sm:pt-0">
++                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-widest group-hover:bg-white group-hover:text-black transition-all duration-300 cursor-pointer">
++                                  <Lock className="h-3 w-3" />
++                                  <span className="hidden sm:inline">Unlock</span>
++                                </div>
+                               </div>
+                             </div>
+                           </div>
+-                        </div>
+-                      ))}
++                        ))}
++                      </div>
+                     </div>
+                   </div>
+                 </div>
+@@ -1680,40 +1821,48 @@ const Index = () => {
+                   </div>
+ 
+                   <div className="max-w-7xl mx-auto">
+-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+-                      {[
+-                        { title: "Psychic & Life Path Synergy", icon: Orbit, label: "Deep Sync", benefit: "Understand how your basic instincts and your higher destiny numbers interact, revealing the 'Master Frequency' that should guide your biggest life decisions." },
+-                        { title: "Name & Date of Birth Balancing", icon: Hash, label: "Identity", benefit: "Discover if your legal name is in harmony with your birth date, and receive specific corrections to ensure your social presence matches your soul's blueprint." },
+-                        { title: "Destiny Number Implementation", icon: Fingerprint, label: "Action", benefit: "A tactical guide on how to 'embody' your destiny number daily, turning theoretical knowledge into a powerful magnet for real-world opportunities." }
+-                      ].map((item, i) => (
+-                        <div key={i} className="group relative p-6 rounded-2xl bg-[#2a002a]/40 border border-white/20 hover:border-secondary/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] flex flex-col h-full">
+-                          <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+-
+-                          <div className="relative z-10 flex flex-col h-full">
+-                            <div className="mb-4 flex items-center justify-between">
+-                              <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center text-secondary shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+-                                <item.icon className="h-5 w-5" />
++                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
++                      <div className="flex flex-col gap-4 order-2 lg:order-1">
++                        {[
++                          { title: "Psychic & Life Path Synergy", icon: Orbit, label: "Deep Sync", benefit: "Understand how your basic instincts and your higher destiny numbers interact, revealing the 'Master Frequency' that should guide your biggest life decisions." },
++                          { title: "Name & Date of Birth Balancing", icon: Hash, label: "Identity", benefit: "Discover if your legal name is in harmony with your birth date, and receive specific corrections to ensure your social presence matches your soul's blueprint." },
++                          { title: "Destiny Number Implementation", icon: Fingerprint, label: "Action", benefit: "A tactical guide on how to 'embody' your destiny number daily, turning theoretical knowledge into a powerful magnet for real-world opportunities." }
++                        ].map((item, i) => (
++                          <div key={i} className="group relative p-6 rounded-2xl bg-gradient-to-br from-indigo-900/30 to-[#0d000d] border border-indigo-500/30 transition-all duration-500 hover:border-indigo-500 hover:shadow-[0_0_30px_rgba(99,102,241,0.15)] flex flex-col hover:translate-x-2">
++                            <div className="relative z-10 flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center">
++                              <div className="shrink-0 w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-indigo-400 shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:bg-white/10 transition-colors">
++                                <item.icon className="h-6 w-6" />
+                               </div>
+-                              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60">{item.label}</span>
+-                            </div>
+-
+-                            <h4 className="text-lg font-sans font-black text-white mb-3 tracking-tight leading-tight">
+-                              {item.title}
+-                            </h4>
+-
+-                            <p className="text-slate-400 text-sm leading-relaxed mb-6 flex-grow font-medium">
+-                              {item.benefit}
+-                            </p>
+-
+-                            <div className="pt-4 border-t border-white/5 mt-auto">
+-                              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-widest hover:bg-secondary hover:text-black hover:shadow-[0_0_20px_rgba(234,179,8,0.5)] transition-all duration-300 cursor-pointer group/unlock">
+-                                <Lock className="h-3 w-3" />
+-                                <span className="drop-shadow-[0_0_5px_rgba(234,179,8,0.3)]">Unlock to Read</span>
++                              <div className="flex-grow">
++                                <div className="mb-1 flex items-center gap-3">
++                                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">{item.label}</span>
++                                </div>
++                                <h4 className="text-lg font-sans font-black text-white mb-2 tracking-tight leading-tight">
++                                  {item.title}
++                                </h4>
++                                <p className="text-slate-400 text-sm leading-relaxed font-medium">
++                                  {item.benefit}
++                                </p>
++                              </div>
++                              <div className="shrink-0 pt-4 sm:pt-0">
++                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-widest group-hover:bg-white group-hover:text-black transition-all duration-300 cursor-pointer">
++                                  <Lock className="h-3 w-3" />
++                                  <span className="hidden sm:inline">Unlock</span>
++                                </div>
+                               </div>
+                             </div>
+                           </div>
+-                        </div>
+-                      ))}
++                        ))}
++                      </div>
++
++                      <div className="relative group rounded-3xl overflow-hidden aspect-square lg:aspect-auto lg:h-full min-h-[300px] order-1 lg:order-2">
++                        <div className="absolute inset-0 bg-gradient-to-b from-[#0d000d] via-transparent to-transparent z-10" />
++                        <img 
++                          src="/images/cosmic_number.png" 
++                          alt="Cosmic Number Alignment Wheel"
++                          className="w-full h-full object-cover border border-white/10 shadow-[0_0_50px_rgba(99,102,241,0.15)] group-hover:scale-105 transition-transform duration-[2000ms]"
++                        />
++                      </div>
+                     </div>
+                   </div>
+                 </div>
+@@ -1839,86 +1988,33 @@ const Index = () => {
+           </section>
+ 
+           {/* What is Numerology Section - SEO Optimized with Premium Layout */}
+-          <section id="what-is-numerology" className="relative overflow-hidden bg-[#0d000d] border-y border-white/5 scroll-mt-20">
++          {/* What is Numerology Teaser Section */}
++          <section id="what-is-numerology" className="relative overflow-hidden bg-[#0d000d] border-y border-white/5 py-24">
+             <div className="absolute inset-0 pointer-events-none">
+-              <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[40%] h-[60%] bg-red-900/5 rounded-full blur-[120px]" />
++              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl h-full bg-secondary/5 rounded-full blur-[120px]" />
+             </div>
+-
+-            <div className="relative max-w-7xl mx-auto flex flex-col md:flex-row items-stretch">
+-              {/* Left Side: Tall Premium Image */}
+-              <div className="w-full md:w-[45%] lg:w-[40%] relative min-h-[400px] md:min-h-[650px] overflow-hidden">
+-                <img
+-                  alt="Ancient stone tablet with golden numerology symbols, sacred geometry Metatron's cube, and mystical numbers representing the foundations of numerological science."
+-                  className="absolute inset-0 w-full h-full object-cover object-center grayscale-[0.2] contrast-[1.1] hover:scale-105 transition-transform duration-[2000ms]"
+-                  src="/images/what is num.jpg"
+-                />
+-
+-                {/* Desktop Side Fade */}
+-                <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[#0d000d] to-transparent hidden md:block" />
+-
+-                {/* Mobile Mirror Fade (Top & Bottom) */}
+-                <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#0d000d] via-[#0d000d]/60 to-transparent md:hidden" />
+-                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0d000d] via-[#0d000d]/40 to-transparent md:hidden" />
+-
+-                {/* Mobile Premium Golden Horizon Lines */}
+-                <div className="absolute top-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-transparent via-secondary/50 to-transparent shadow-[0_0_15px_rgba(234,179,8,0.4)] md:hidden" />
+-                <div className="absolute bottom-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-transparent via-secondary/50 to-transparent shadow-[0_0_15px_rgba(234,179,8,0.4)] md:hidden" />
+-              </div>
+-
+-              {/* Right Side: Content */}
+-              <div className="flex-1 p-8 md:p-16 lg:p-20 flex flex-col justify-center relative z-10">
+-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-black uppercase tracking-[0.3em] mb-6 w-fit">
+-                  Ancient Science
+-                </div>
+-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-sans font-black mb-8 text-white tracking-tight leading-tight">
+-                  What is <span className="text-secondary italic">Numerology?</span>
+-                </h2>
+-
+-                <div className="space-y-6 text-slate-300 text-base md:text-lg leading-relaxed">
+-                  <p>
+-                    Numerology is the ancient art and science of decoding the hidden language of numbers that governs your life. For over 2,500 years, mystics, philosophers, and scientists have used <strong className="text-secondary" >numerology</strong> to unlock the blueprint of human destiny.
+-                  </p>
+-                  <p>
+-                    Unlike astrology, which looks to the stars, numerology finds meaning in the numbers embedded in your <strong>birth date</strong> and <strong>name</strong>. Every letter carries a vibrational frequency, and when combined, they reveal your <em className="text-white">life path number</em>, personality traits, and even future opportunities.
+-                  </p>
+-                  <p>
+-                    We use the time-tested <strong className="text-secondary">Pythagorean system</strong>—the same mathematical framework that ancient Greek philosophers relied on to understand the cosmos. By converting your name into numbers, we map your soul's <em className="italic text-white">energetic signature</em>.
+-                  </p>
+-
+-                  <div className="mt-10 p-6 rounded-2xl bg-white/[0.03] border border-white/5 relative group overflow-hidden">
+-                    <div className="absolute inset-0 bg-gradient-to-r from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+-                    <div className="relative z-10 flex gap-4">
+-                      <div className="text-3xl">💡</div>
+-                      <div>
+-                        <p className="text-sm md:text-base">
+-                          <strong className="text-white block mb-1">The Digital DNA of Soul</strong>
+-                          Just as DNA encodes your biological instructions, numbers encode your spiritual blueprint. Numerology is the key to reading that code and aligning with your natural frequency.
+-                        </p>
+-                      </div>
+-                    </div>
+-                  </div>
+-                </div>
+-
+-                  <div className="mt-10 flex flex-wrap gap-6 items-center">
+-                    <a
+-                      className="group inline-flex items-center gap-2 text-secondary font-black text-sm uppercase tracking-widest hover:text-white transition-colors"
+-                      href="#how-it-works"
+-                    >
+-                      <span>Methodology</span>
+-                      <div className="w-8 h-px bg-secondary group-hover:w-12 group-hover:bg-white transition-all" />
+-                    </a>
+-                    
+-                    <Link
+-                      className="group inline-flex items-center gap-2 text-white/60 font-black text-sm uppercase tracking-widest hover:text-secondary transition-colors"
+-                      to="/blog/name-numerology-how-your-name-shapes-destiny"
+-                    >
+-                      <Orbit className="h-4 w-4 text-secondary/40 group-hover:text-secondary group-hover:rotate-90 transition-all" />
+-                      <span>Deep Dive Guide</span>
+-                      <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+-                    </Link>
+-                  </div>
+-                </div>
++            
++            <div className="relative max-w-3xl mx-auto text-center px-4">
++              <div className="inline-flex items-center gap-3 mb-6">
++                <div className="h-px w-8 bg-secondary/40" />
++                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary">The Science</span>
++                <div className="h-px w-8 bg-secondary/40" />
+               </div>
++              <h2 className="text-4xl md:text-5xl font-serif font-black text-white mb-6 tracking-tight">
++                Not Magic. <span className="text-secondary italic">Mathematics.</span>
++              </h2>
++              <p className="text-slate-400 text-lg md:text-xl font-medium leading-relaxed mb-10">
++                Pythagorean Numerology is the ancient study of vibrational mathematics and cosmic geometry. 
++                Discover how your name and birthdate create a unique energetic frequency that shapes your destiny.
++              </p>
++              <Link 
++                to="/science"
++                className="inline-flex items-center gap-3 px-8 py-4 rounded-full bg-secondary text-black font-black uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(234,179,8,0.3)]"
++              >
++                Read The Science
++                <Orbit className="h-4 w-4" />
++              </Link>
++            </div>
+           </section>
+ 
+           <section className="py-24 relative overflow-hidden scroll-mt-20" id="how-it-works">
+@@ -2007,7 +2103,8 @@ const Index = () => {
+             </section>
+ 
+ 
+-          <section className="py-24 relative overflow-hidden bg-[#0d000d]" id="testimonials">
++          {/* Soul Reviews Section - Hiding temporarily until real reviews are gathered */}
++          <section className="hidden py-24 relative overflow-hidden bg-[#0d000d]" id="testimonials">
+             <div className="absolute inset-0 pointer-events-none z-0">
+               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-secondary/5 rounded-full blur-[160px]" />
+             </div>

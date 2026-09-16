@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, Orbit, ChevronRight, Zap, Sparkles, Star, Rocket, Compass, X } from "lucide-react";
+import { ArrowLeft, Orbit, Calendar, Clock, Share2, Facebook, Twitter, Linkedin, Copy, Check, ChevronLeft, Bookmark, Sparkles, Star, Rocket, Zap, ChevronRight, Compass, X } from "lucide-react";
 import { Footer } from "@/components/Footer";
+import { Navbar } from "@/components/Navbar";
 
 interface BlogPostData {
     id: string;
@@ -251,21 +252,7 @@ const BlogPost = () => {
             </div>
 
             {/* Navigation */}
-            <nav className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-2xl border-b border-white/5 h-16 md:h-20">
-                <div className="max-w-7xl mx-auto h-full px-6 md:px-10 flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-2 group transition-all active:scale-95">
-                        <div className="p-2 rounded-xl bg-secondary/10 border border-secondary/20 shadow-[0_0_15px_rgba(234,179,8,0.1)]">
-                            <Orbit className="h-5 w-5 text-secondary group-hover:rotate-180 transition-transform duration-1000" />
-                        </div>
-                        <span className="font-serif font-black text-xl text-white tracking-tight">NumGuru</span>
-                    </Link>
-
-                    <Link to="/blog" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors group">
-                        <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                        Back to Library
-                    </Link>
-                </div>
-            </nav>
+            <Navbar />
 
             <main className="relative pt-32 md:pt-40 pb-24 px-6 md:px-10">
                 <div className="max-w-7xl mx-auto">

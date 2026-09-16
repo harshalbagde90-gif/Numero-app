@@ -1,0 +1,242 @@
+[
+  {
+    "step": 834,
+    "name": "multi_replace_file_content",
+    "summary": "\"Edit Index.tsx\""
+  },
+  {
+    "step": 843,
+    "name": "replace_file_content",
+    "summary": "\"Edit Index.tsx\""
+  },
+  {
+    "step": 901,
+    "name": "write_to_file",
+    "summary": "\"Create plan\""
+  },
+  {
+    "step": 903,
+    "name": "write_to_file",
+    "summary": "\"Create plan\""
+  },
+  {
+    "step": 905,
+    "name": "write_to_file",
+    "summary": "\"Create plan\""
+  },
+  {
+    "step": 901,
+    "name": "write_to_file",
+    "summary": "\"Create plan\""
+  },
+  {
+    "step": 903,
+    "name": "write_to_file",
+    "summary": "\"Create plan\""
+  },
+  {
+    "step": 905,
+    "name": "write_to_file",
+    "summary": "\"Create plan\""
+  },
+  {
+    "step": 911,
+    "name": "write_to_file",
+    "summary": "\"Create task list\""
+  },
+  {
+    "step": 913,
+    "name": "write_to_file",
+    "summary": "\"Create task list\""
+  },
+  {
+    "step": 925,
+    "name": "write_to_file",
+    "summary": "\"Create Science.tsx\""
+  },
+  {
+    "step": 940,
+    "name": "replace_file_content",
+    "summary": "\"Edit task.md\""
+  },
+  {
+    "step": 997,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1009,
+    "name": "multi_replace_file_content",
+    "summary": "\"Edit Index.tsx\""
+  },
+  {
+    "step": 1012,
+    "name": "replace_file_content",
+    "summary": "\"Edit Index.tsx\""
+  },
+  {
+    "step": 1048,
+    "name": "multi_replace_file_content",
+    "summary": "\"Edit Index.tsx\""
+  },
+  {
+    "step": 1057,
+    "name": "replace_file_content",
+    "summary": "\"Edit Index.tsx\""
+  },
+  {
+    "step": 1060,
+    "name": "replace_file_content",
+    "summary": "\"Edit task.md\""
+  },
+  {
+    "step": 1063,
+    "name": "write_to_file",
+    "summary": "\"Create walkthrough\""
+  },
+  {
+    "step": 1093,
+    "name": "multi_replace_file_content",
+    "summary": "\"Edit Index.tsx\""
+  },
+  {
+    "step": 1127,
+    "name": "multi_replace_file_content",
+    "summary": "\"Edit Science.tsx\""
+  },
+  {
+    "step": 1169,
+    "name": "multi_replace_file_content",
+    "summary": "\"Edit Science.tsx\""
+  },
+  {
+    "step": 1187,
+    "name": "multi_replace_file_content",
+    "summary": "\"Edit Index.tsx\""
+  },
+  {
+    "step": 1191,
+    "name": "replace_file_content",
+    "summary": "\"Edit Science.tsx\""
+  },
+  {
+    "step": 1208,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1210,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1212,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1208,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1210,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1212,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1218,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1220,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1241,
+    "name": "replace_file_content",
+    "summary": "\"Edit Index.tsx\""
+  },
+  {
+    "step": 1247,
+    "name": "replace_file_content",
+    "summary": "\"Edit Index.tsx\""
+  },
+  {
+    "step": 1253,
+    "name": "replace_file_content",
+    "summary": "\"Edit Index.tsx\""
+  },
+  {
+    "step": 1256,
+    "name": "multi_replace_file_content",
+    "summary": "\"Edit file\""
+  },
+  {
+    "step": 1259,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1261,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1363,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1363,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1372,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1374,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1423,
+    "name": "multi_replace_file_content",
+    "summary": "\"Edit file\""
+  },
+  {
+    "step": 1438,
+    "name": "replace_file_content",
+    "summary": "\"Edit ResultPreview.tsx\""
+  },
+  {
+    "step": 1450,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1469,
+    "name": "write_to_file",
+    "summary": "\"Update file\""
+  },
+  {
+    "step": 1472,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  },
+  {
+    "step": 1508,
+    "name": "write_to_file",
+    "summary": "\"Create file\""
+  }
+]

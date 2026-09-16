@@ -7,6 +7,7 @@
 
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-0HGFSE14H2"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag() { dataLayer.push(arguments); }
@@ -14,6 +15,7 @@
 
     gtag('config', 'G-0HGFSE14H2');
   </script>
+  <link rel="preconnect" href="https://checkout.razorpay.com" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
@@ -68,6 +70,60 @@
         "@type": "WebPage",
         "name": "Premium Cosmic Blueprint",
         "url": "https://numguru.online/#premium-report"
+      }
+    ]
+  }
+  </script>
+
+  <!-- Organization Schema for AEO/Brand Knowledge Graph -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "NumGuru",
+    "alternateName": "Numerology Guru",
+    "url": "https://numguru.online/",
+    "logo": "https://numguru.online/numguru-logo.svg",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "email": "support@numguru.online",
+      "contactType": "customer service"
+    },
+    "sameAs": [
+      "https://numguru.online"
+    ]
+  }
+  </script>
+
+  <!-- FAQ Schema for AEO/GEO Search -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is Pythagorean Numerology?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Pythagorean Numerology is an ancient science developed by the Greek philosopher Pythagoras. It assigns numerical values to the letters of your name and uses your birth date to decode your core vibrational frequency, revealing your life purpose, strengths, and destiny."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How accurate is the Destiny Matrix?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The Destiny Matrix is highly accurate as it is based on pure mathematical principles. While it doesn't predict the future in a fortune-telling sense, it maps out your inherent cosmic blueprint and the energetic cycles you will experience throughout your life."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What do I get in the Premium Cosmic Report?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The premium report is a comprehensive 20+ page deep-dive into your soul's blueprint. It includes your core numbers, personal year cycles, karmic lessons, power colors, and sacred remedies to align your energy for success and harmony."
+        }
       }
     ]
   }

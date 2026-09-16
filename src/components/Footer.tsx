@@ -31,13 +31,15 @@ export function Footer() {
                     {/* Quick Links */}
                     <div className="md:col-span-2 space-y-6">
                         <h4 className="text-white font-bold uppercase tracking-widest text-xs">Explore</h4>
-                        <ul className="space-y-4 text-sm text-slate-400">
-                            <li><a href="#" className="hover:text-secondary transition-colors flex items-center gap-2 group"><ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /> Home</a></li>
-                            <li><a href="#what-is-numerology" className="hover:text-secondary transition-colors flex items-center gap-2 group"><ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /> Wisdom Hub</a></li>
-                            <li><a href="#premium-report" className="hover:text-secondary transition-colors flex items-center gap-2 group"><ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /> Full Report</a></li>
-                            <li><a href="#testimonials" className="hover:text-secondary transition-colors flex items-center gap-2 group"><ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /> Soul Stories</a></li>
-                            <li><Link to="/blog" className="hover:text-secondary transition-colors flex items-center gap-2 group"><ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /> Wisdom Blog</Link></li>
-                        </ul>
+                        <nav aria-label="Footer Navigation">
+                            <ul className="space-y-4 text-sm text-slate-400">
+                                <li><Link to="/" className="hover:text-secondary transition-colors flex items-center gap-2 group"><ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /> Home</Link></li>
+                                <li><Link to="/about" className="hover:text-secondary transition-colors flex items-center gap-2 group"><ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /> About Us</Link></li>
+                                <li><Link to="/science" className="hover:text-secondary transition-colors flex items-center gap-2 group"><ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /> The Science</Link></li>
+                                <li><Link to="/blog" className="hover:text-secondary transition-colors flex items-center gap-2 group"><ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /> Wisdom Blog</Link></li>
+                                <li><Link to="/contact" className="hover:text-secondary transition-colors flex items-center gap-2 group"><ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /> Contact Us</Link></li>
+                            </ul>
+                        </nav>
                     </div>
 
                     {/* Legal */}
@@ -83,8 +85,8 @@ export function Footer() {
                     </div>
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/5 border border-emerald-500/20 shadow-inner">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Systems Online</span>
+                            <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Secure Connection</span>
                         </div>
                         <div className="flex items-center gap-3">
                             <span className="text-[10px] text-slate-600 font-bold uppercase tracking-tighter">Powered By</span>

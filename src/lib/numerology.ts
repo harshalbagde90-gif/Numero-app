@@ -1268,7 +1268,8 @@ export interface FreeNumerologyReport {
   dob: string;
   lifePath: number;
   whatThisMeans: string;
-  luckyColor: { name: string; hex: string; line: string };
+  luckyColor: { name: string; hex: string; line: string; frequency?: string; reason?: string };
+  cosmicTruth?: { title: string; content: string };
   quickInsight: string;
   cta: string;
   disclaimer: string;
@@ -1345,15 +1346,69 @@ export function generateFreeReportFromDob(dob: Date): FreeNumerologyReport {
     "to boost hidden confidence", "to reset your karmic frequency", "to ignite your creative spark"
   ];
 
-  const getS = (arr: string[], s: number) => arr[s % arr.length];
+  const hiddenStrengths: Record<number, string> = {
+    1: "You possess a rare, natural magnetism. When you speak with conviction, people instinctively want to follow your lead.",
+    2: "Your emotional intelligence is a superpower. You can read a room instantly and bring harmony to the most chaotic situations.",
+    3: "Your creative energy is highly infectious. You have a unique ability to uplift others just by being your authentic self.",
+    4: "You are the ultimate architect. Your ability to turn chaotic ideas into solid, lasting realities is unmatched.",
+    5: "You are a master of adaptation. Your quick thinking allows you to thrive in unpredictable situations that would break others.",
+    6: "Your protective aura is incredibly strong. People naturally feel safe and understood when they are in your presence.",
+    7: "You have a profound intuitive radar. Your ability to see past illusions and discover the deeper truth is extraordinary.",
+    8: "You have a natural resonance with abundance. When you focus your energy, you have the power to manifest significant wealth.",
+    9: "Your empathy is boundless. You have a unique cosmic gift to inspire large groups of people toward a better future.",
+    11: "You are a conduit for divine inspiration. Your gut feelings and sudden insights are almost always scarily accurate.",
+    22: "You are a visionary builder. You have the rare potential to create systems or projects that outlast your lifetime.",
+    33: "You are a master healer. Your mere presence brings comfort, and your words carry a deeply therapeutic frequency."
+  };
+  
+  const quickInsight = hiddenStrengths[lp] || hiddenStrengths[9];
+  
+  const frequencies: Record<string, string> = {
+    "Red": "396 Hz", "Orange": "417 Hz", "Yellow": "528 Hz", "Green": "639 Hz",
+    "Blue": "741 Hz", "Indigo": "852 Hz", "Violet": "963 Hz", "Pink": "432 Hz",
+    "Gold": "528 Hz", "Silver": "417 Hz", "Bronze": "396 Hz", "White": "963 Hz"
+  };
+  const freq = frequencies[color.name] || "432 Hz";
+  
+  const lpNeeds: Record<number, string> = {
+    1: "leadership and action", 2: "harmony and intuition", 3: "creative expression",
+    4: "stability and structure", 5: "freedom and change", 6: "nurturing and responsibility",
+    7: "wisdom and truth", 8: "power and abundance", 9: "compassion and completion",
+    11: "spiritual illumination", 22: "master building", 33: "healing and guidance"
+  };
+  const need = lpNeeds[lp] || lpNeeds[9];
 
-  const quickInsight = `${getS(actions, seed)} ${getS(objects, seed + day)} ${getS(rituals, seed * month)} ${getS(benefits, seed + lp)}.`;
+  const cosmicTruths: Record<number, string> = {
+    1: "You project immense confidence, but secretly fear you aren't doing enough to justify your existence. Your independence often isolates you.",
+    2: "You overgive to others but secretly resent when they don't return the effort. You crave peace so much that you suppress your true feelings.",
+    3: "You smile and entertain, but internally struggle with deep self-doubt and fear of not being taken seriously by those you respect.",
+    4: "You build secure foundations for everyone else, yet often feel trapped by the very routines and responsibilities you created.",
+    5: "You crave absolute freedom but secretly fear instability. You often abandon projects just before the breakthrough because of restlessness.",
+    6: "You fix everyone else's problems to avoid facing your own internal chaos. You secretly feel unappreciated despite everything you sacrifice.",
+    7: "You constantly seek ultimate truth and knowledge, but often use your intellect as a shield to avoid messy emotional intimacy.",
+    8: "You associate self-worth with material success and control, secretly terrified of powerlessness or being seen as weak or incapable.",
+    9: "You try to save the world, but secretly struggle to forgive those closest to you. Your high ideals often lead to crushing disappointment.",
+    11: "You have profound psychic insights but often suffer from severe anxiety and nervous tension, doubting your own intuitive gifts.",
+    22: "You hold a massive vision for the future, but the pressure of your own potential often paralyzes you into extreme procrastination.",
+    33: "You feel responsible for the emotional healing of humanity, often absorbing others' toxic energy until you are completely drained."
+  };
+
   return {
     title: "Your Quick Numerology Snapshot",
     dob: formatDobDDMMYYYY(dob),
     lifePath: lp,
     whatThisMeans: whatThisMeansMap[lp] || whatThisMeansMap[9],
-    luckyColor: { name: color.name, hex: color.hex, line: "This color may help you feel more aligned." },
+    luckyColor: { 
+      name: color.name, 
+      hex: color.hex, 
+      line: "This color may help you feel more aligned.",
+      frequency: freq,
+      reason: `Wearing this aligns with your Life Path ${lp}'s core need for ${need}.`
+    },
+    cosmicTruth: {
+      title: "Cosmic Truth (Warning)",
+      content: cosmicTruths[lp] || cosmicTruths[9]
+    },
     quickInsight,
     cta: "Unlock full report.",
     disclaimer: "Your cosmic blueprint goes deeper than just numbers. This preview is just the beginning of your journey.",

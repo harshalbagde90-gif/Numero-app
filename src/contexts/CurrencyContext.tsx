@@ -48,8 +48,8 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const value = {
         currency,
         symbol: currency === 'INR' ? '₹' : '$',
-        amount: currency === 'INR' ? 399 : 4.99,
-        originalAmount: currency === 'INR' ? 3999 : 49.99, // Showing 90% off usually
+        amount: currency === 'INR' ? 99 : 9.99,
+        originalAmount: currency === 'INR' ? 999 : 99.99, // Showing 90% off usually
         isLoading
     };
 

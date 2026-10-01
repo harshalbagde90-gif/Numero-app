@@ -52,11 +52,11 @@ const Contact = () => {
               <div className="bg-black/60 border border-amber-500/30 p-6 rounded-2xl mb-10 w-full flex items-center justify-center shadow-inner relative z-10 overflow-hidden group/email">
                 <div className="absolute inset-0 bg-amber-500/10 blur-xl opacity-0 group-hover/email:opacity-100 transition-opacity duration-500" />
                 <span className="text-amber-400 font-bold text-xl md:text-3xl tracking-wider select-all relative z-10">
-                  support@numguru.online
+                  connectnumguru@gmail.com
                 </span>
               </div>
               
-              <a href="mailto:support@numguru.online" className="w-full relative z-10 block">
+              <a href="mailto:connectnumguru@gmail.com" className="w-full relative z-10 block">
                 <Button className="w-full h-14 bg-amber-500 hover:bg-amber-400 text-black font-black text-lg rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] transition-all uppercase tracking-widest">
                   Send an Email
                 </Button>

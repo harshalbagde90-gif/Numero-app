@@ -194,20 +194,21 @@ const Index = () => {
     { id: "remedies", label: "Sacred Remedies", icon: Sparkles },
     { id: "what-is-numerology", label: "The Science", icon: BookOpen },
     { id: "how-it-works", label: "How It Works", icon: Activity },
-    { id: "testimonials", label: "Soul Reviews", icon: Star },
     { id: "cta", label: "Final Reveal", icon: Crown },
   ];
 
   const scrollToSection = (id: string) => {
+    setIsBrowseOpen(false);
+    document.body.style.overflow = "auto";
+
     if (id === "top") {
       window.scrollTo({ top: 0, behavior: "smooth" });
-      setIsBrowseOpen(false);
       return;
     }
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
-      setIsBrowseOpen(false);
+      const top = window.scrollY + element.getBoundingClientRect().top - 80;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
     }
   };
 
@@ -1711,7 +1712,7 @@ const Index = () => {
               </div>
 
               {/* Sacred Remedies Library Section */}
-              <div className="flex items-center gap-6 mb-12 mt-24">
+              <div id="remedies" className="flex items-center gap-6 mb-12 mt-24">
                  <div className="h-px bg-white/10 flex-grow" />
                  <span className="text-xl md:text-2xl font-black uppercase tracking-[0.2em] text-white">
                    The Sacred <span className="text-[#FF00FF]">Remedies</span> Library

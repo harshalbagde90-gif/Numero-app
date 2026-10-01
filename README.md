@@ -66,3 +66,7 @@ npm run dev
 
 ---
 *© 2026 NumGuru. All Rights Reserved. Built with mystic vibrations and modern code.*
+
+## Blog SEO and image builds
+
+Use Node.js 20.9 or newer. npm run dev prepares the blog index and responsive WebP images automatically. npm run build generates canonical sitemap URLs and initial HTML for the blog listing and each unique article. Run npm run check:blog after a build to verify the article metadata, HTML, sitemap and image dimensions. Generated indexes and image variants are ignored by Git and regenerated during deployment. Publication dates are retained; use dateModified in a blog JSON file when updating an article.

@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Generated blog metadata and responsive images
+src/content/blog-index.json
+src/content/blog-images.json
+public/blog-images/optimized/
+
+# Local working data; only final website assets belong in this repository.
+.freebuff/
+numguru data files/

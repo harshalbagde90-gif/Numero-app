@@ -1,71 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-
-function updateSitemap() {
-    try {
-        const rootDir = process.cwd();
-        const blogDir = path.join(rootDir, 'src/content/blogs');
-        const sitemapPath = path.join(rootDir, 'public/sitemap.xml');
-        const baseUrl = 'https://numguru.online';
-        const today = new Date().toISOString().split('T')[0];
-
-        console.log(`Working directory: ${rootDir}`);
-        console.log(`Checking blog directory: ${blogDir}`);
-
-        let blogUrls = [];
-        if (fs.existsSync(blogDir)) {
-            const files = fs.readdirSync(blogDir);
-            files.forEach(file => {
-                if (file.endsWith('.json')) {
-                    const slug = file.replace('.json', '');
-                    blogUrls.push(`${baseUrl}/blog/${slug}`);
-                }
-            });
-        } else {
-            console.error('Blog directory not found!');
-        }
-
-        console.log(`Found ${blogUrls.length} blog posts.`);
-
-        let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${baseUrl}/</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/blog</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/review</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-`;
-
-        blogUrls.forEach(url => {
-            xml += `  <url>
-    <loc>${url}</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>\n`;
-        });
-
-        xml += `</urlset>`;
-
-        fs.writeFileSync(sitemapPath, xml);
-        console.log(`Successfully updated ${sitemapPath}`);
-    } catch (err) {
-        console.error('An error occurred:', err);
-        process.exit(1);
-    }
-}
-
-updateSitemap();
+const fs = require('node:fs');
+const path = require('node:path');
+const { root, siteUrl, readPosts, isoDate } = require('./blog-data.cjs');
+const staticPaths = ['/', '/blog', '/science', '/about', '/contact', '/privacy-policy', '/terms-conditions', '/refund-policy'];
+const entries = staticPaths.map(route => ({ url: siteUrl + route }));
+for (const post of readPosts()) entries.push({ url: siteUrl + '/blog/' + post.slug, modified: isoDate(post.dateModified || post.date) });
+const escapeXml = value => value.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[char]));
+const xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+  entries.map(entry => '  <url>\n    <loc>' + escapeXml(entry.url) + '</loc>' + (entry.modified ? '\n    <lastmod>' + entry.modified + '</lastmod>' : '') + '\n  </url>').join('\n') + '\n</urlset>\n';
+fs.writeFileSync(path.join(root, 'public/sitemap.xml'), xml);
+console.log('Sitemap: ' + entries.length + ' canonical URLs from actual blog slugs.');

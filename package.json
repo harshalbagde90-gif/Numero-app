@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/generate-sitemap.cjs && vite build",
-    "build:dev": "node scripts/generate-sitemap.cjs && vite build --mode development",
+    "build": "npm run prepare:blog && vite build && node scripts/generate-static-pages.cjs",
+    "build:dev": "npm run prepare:blog && vite build --mode development && node scripts/generate-static-pages.cjs",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepare:blog": "node scripts/prepare-blog.cjs && node scripts/generate-sitemap.cjs",
+    "predev": "npm run prepare:blog",
+    "check:blog": "node scripts/check-blog-build.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -80,6 +83,7 @@
     "globals": "^15.15.0",
     "lovable-tagger": "^1.1.13",
     "postcss": "^8.5.6",
+    "sharp": "^0.35.5",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",

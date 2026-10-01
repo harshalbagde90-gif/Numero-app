@@ -1,3 +1,5 @@
+import { BlogImage } from "@/components/BlogImage";
+import { blogPosts as blogCatalog } from "@/lib/blog";
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Orbit, Calendar, Clock, ChevronRight, Sparkles, Moon, Search, X, ChevronLeft, Star } from "lucide-react";
@@ -74,87 +76,12 @@ function scorePostByKeyword(post: any, kw: string): number {
 }
 
 const Blog = () => {
-  const [blogPosts, setBlogPosts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const blogPosts = blogCatalog;
+  const loading = false;
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeKeyword, setActiveKeyword] = useState("");
   const keywordScrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const fetchPosts = () => {
-      try {
-        document.title = "Numerology Insights & Articles | NumGuru Blog";
-        const metaDesc = document.querySelector('meta[name="description"]');
-        if (metaDesc) metaDesc.setAttribute('content', "Explore the NumGuru blog for deep insights into numerology, life paths, and celestial wisdom.");
-
-        const postModules = import.meta.glob("/src/content/blogs/*.json", { eager: true });
-        const posts = Object.values(postModules).map((m: any) => m.default || m);
-
-        // Deduplicate by slug
-        const seen = new Set<string>();
-        const validPosts = posts
-          .filter((p: any) => p.id && p.slug && !seen.has(p.slug) && seen.add(p.slug))
-          .sort((a: any, b: any) => String(b.id).localeCompare(String(a.id)));
-
-        setBlogPosts(validPosts);
-
-        // ── CollectionPage + Blog Schema for Google ──────────────────────
-        const blogSchema = {
-          "@context": "https://schema.org",
-          "@type": "Blog",
-          "@id": "https://numguru.online/blog",
-          "name": "NumGuru Blog — Numerology Insights & Articles",
-          "description": "Explore the NumGuru blog for deep insights into numerology, life paths, lucky numbers, and celestial wisdom.",
-          "url": "https://numguru.online/blog",
-          "inLanguage": "en-IN",
-          "publisher": {
-            "@type": "Organization",
-            "name": "NumGuru",
-            "url": "https://numguru.online",
-            "logo": {
-              "@type": "ImageObject",
-              "url": "https://numguru.online/favicon.svg"
-            }
-          },
-          "blogPost": validPosts.map((p: any) => {
-            const parsedDate = p.date ? new Date(p.date) : new Date("2026-01-27");
-            const isoDate = isNaN(parsedDate.getTime()) ? "2026-01-27" : parsedDate.toISOString().split('T')[0];
-            const imgUrl = p.image
-              ? `https://numguru.online${p.image.startsWith('/') ? '' : '/'}${p.image}`
-              : "https://numguru.online/og-image.png";
-            return {
-              "@type": "BlogPosting",
-              "headline": p.title,
-              "description": p.excerpt || "",
-              "url": `https://numguru.online/blog/${p.slug}`,
-              "datePublished": isoDate,
-              "dateModified": isoDate,
-              "image": imgUrl,
-              "author": { "@type": "Organization", "name": "NumGuru" }
-            };
-          })
-        };
-
-        // Inject or update the schema script tag
-        let schemaScript = document.querySelector('#blog-collection-json-ld') as HTMLScriptElement;
-        if (!schemaScript) {
-          schemaScript = document.createElement('script') as HTMLScriptElement;
-          schemaScript.id = 'blog-collection-json-ld';
-          schemaScript.type = 'application/ld+json';
-          document.head.appendChild(schemaScript);
-        }
-        schemaScript.textContent = JSON.stringify(blogSchema, null, 2);
-        // ─────────────────────────────────────────────────────────────────
-      } catch (err) {
-        console.error("Error loading blogs:", err);
-      } finally {
-        setLoading(false);
-        window.scrollTo(0, 0);
-      }
-    };
-    fetchPosts();
-  }, []);
 
   const categories = useMemo(() => {
     const cats = blogPosts.map((p: any) => p.category).filter(Boolean);
@@ -378,12 +305,7 @@ const Blog = () => {
                 <Link key={topPost.slug} to={`/blog/${topPost.slug}`} className="group block focus:outline-none -mt-20">
                   <article className="flex flex-col lg:flex-row items-center gap-6 md:gap-16 p-6 md:p-0 rounded-3xl ring-1 ring-secondary/30 shadow-[0_0_40px_rgba(234,179,8,0.08)] md:ring-0 md:shadow-none">
                     <div className="w-full lg:w-1/2 aspect-[16/10] overflow-hidden relative rounded-2xl md:rounded-3xl border border-secondary/30 shadow-[0_0_30px_rgba(234,179,8,0.12)]">
-                      <img
-                        src={topPost.image?.startsWith('http') || topPost.image?.startsWith('/') ? encodeURI(topPost.image) : `/${encodeURI(topPost.image || 'og-image.png')}`}
-                        alt={topPost.title}
-                        className="w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-105"
-                        onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200"; }}
-                      />
+                      <BlogImage src={topPost.image} alt={topPost.title} className="w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-105" priority sizes="(min-width: 1024px) 50vw, 100vw" />
                       <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500" />
                     </div>
                     <div className="w-full lg:w-1/2 flex flex-col items-start text-left px-2 md:px-0">
@@ -423,12 +345,7 @@ const Blog = () => {
               <Link key={post.slug} to={`/blog/${post.slug}`} className="group block focus:outline-none">
                 <article className="flex flex-col lg:flex-row items-center gap-6 md:gap-16">
                   <div className="w-full lg:w-1/2 aspect-[16/10] overflow-hidden relative rounded-2xl md:rounded-3xl border border-white/5 shadow-2xl">
-                    <img
-                      src={post.image?.startsWith('http') || post.image?.startsWith('/') ? encodeURI(post.image) : `/${encodeURI(post.image || 'og-image.png')}`}
-                      alt={post.title}
-                      className="w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-105"
-                      onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200"; }}
-                    />
+                    <BlogImage src={post.image} alt={post.title} className="w-full h-full object-cover transition-transform duration-[2s] ease-out group-hover:scale-105" sizes="(min-width: 1024px) 50vw, 100vw" />
                     <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors duration-500" />
                   </div>
                   <div className="w-full lg:w-1/2 flex flex-col items-start text-left px-2 md:px-0">

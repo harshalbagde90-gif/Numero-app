@@ -1,3 +1,5 @@
+import { BlogImage } from "@/components/BlogImage";
+import { blogPosts as blogCatalog } from "@/lib/blog";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ResultPreview } from "@/components/ResultPreview";
@@ -72,19 +74,7 @@ const Index = () => {
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
 
-  const [latestPosts, setLatestPosts] = useState<any[]>([]);
-
-  useEffect(() => {
-    try {
-      const postModules = import.meta.glob("/src/content/blogs/*.json", { eager: true });
-      const posts = Object.values(postModules)
-        .map((module: any) => module.default || module)
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setLatestPosts(posts);
-    } catch (error) {
-      console.error("Error loading latest posts:", error);
-    }
-  }, []);
+  const latestPosts = blogCatalog;
 
   const scrollToTop = () => {
     const topElement = document.getElementById("top");
@@ -1266,15 +1256,7 @@ const Index = () => {
                         className="group relative overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.02] transition-all duration-500 hover:border-secondary/30 hover:bg-white/[0.05] flex flex-col h-full"
                       >
                         <div className="aspect-[16/10] overflow-hidden grayscale-[0.3] group-hover:grayscale-0 transition-all duration-700 shrink-0">
-                          <img
-                            src={post.image?.startsWith('http') || post.image?.startsWith('/') ? post.image : `/${post.image || 'og-image.png'}`}
-                            alt={post.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800";
-                            }}
-                          />
+                          <BlogImage src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]" sizes="(min-width: 1024px) 50vw, 100vw" />
                         </div>
                         <div className="p-6 flex flex-col items-center text-center flex-grow">
                           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary/60 mb-3 block">{post.category}</span>
@@ -1619,7 +1601,7 @@ const Index = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 <div className="lg:col-span-1 rounded-[1.5rem] overflow-hidden border border-[#3a153a] shadow-[0_0_30px_rgba(255,0,255,0.1)] group">
-                  <img src="/color_alchemy_side.jpg" className="w-full h-full object-cover min-h-[300px] group-hover:scale-105 transition-transform duration-700" alt="Color Alchemy" />
+                  <BlogImage src="/color_alchemy_side.jpg" alt="Color Alchemy" className="w-full h-full object-cover min-h-[300px] group-hover:scale-105 transition-transform duration-700" sizes="(min-width: 1024px) 50vw, 100vw" />
                 </div>
                 <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[
@@ -1724,7 +1706,7 @@ const Index = () => {
                   ))}
                 </div>
                 <div className="lg:col-span-1 rounded-[1.5rem] overflow-hidden border border-[#3a153a] shadow-[0_0_30px_rgba(255,0,255,0.1)] group order-1 lg:order-2">
-                  <img src="/cosmic_number_side.jpg" className="w-full h-full object-cover min-h-[300px] group-hover:scale-105 transition-transform duration-700" alt="Cosmic Number Alignment" />
+                  <BlogImage src="/cosmic_number_side.jpg" alt="Cosmic Number Alignment" className="w-full h-full object-cover min-h-[300px] group-hover:scale-105 transition-transform duration-700" sizes="(min-width: 1024px) 50vw, 100vw" />
                 </div>
               </div>
 
@@ -1739,7 +1721,7 @@ const Index = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 <div className="lg:col-span-1 rounded-[1.5rem] overflow-hidden border border-[#3a153a] shadow-[0_0_30px_rgba(255,0,255,0.1)] group">
-                  <img src="/sacred_remedies_side.jpg" className="w-full h-full object-cover min-h-[300px] group-hover:scale-105 transition-transform duration-700" alt="Sacred Remedies Library" />
+                  <BlogImage src="/sacred_remedies_side.jpg" alt="Sacred Remedies Library" className="w-full h-full object-cover min-h-[300px] group-hover:scale-105 transition-transform duration-700" sizes="(min-width: 1024px) 50vw, 100vw" />
                 </div>
                 <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[

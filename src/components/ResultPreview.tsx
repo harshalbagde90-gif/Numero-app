@@ -2146,7 +2146,7 @@ export function ResultPreview({
                 { id: "blueprint", icon: LayoutGrid, label: "Strategic Roadmap" },
                 { id: "remedies", icon: Gem, label: "Sacred Remedies" }
               ].map((item, i) => (
-                item.isLink ? (
+                'isLink' in item && item.isLink ? (
                   <Link
                     key={item.id}
                     to="/blog"

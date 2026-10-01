@@ -15,6 +15,8 @@ import SubmitReview from "./pages/SubmitReview";
 import CosmicStartupLoader from "./components/CosmicStartupLoader";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 
+import { PageSeo } from "./components/PageSeo";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -25,6 +27,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <PageSeo />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />

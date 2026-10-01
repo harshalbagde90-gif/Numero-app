@@ -1,26 +1,25 @@
+import { BlogImage } from "@/components/BlogImage";
+import { blogPosts, loadBlogPost, type BlogPostData } from "@/lib/blog";
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Orbit, Calendar, Clock, Share2, Facebook, Twitter, Linkedin, Copy, Check, ChevronLeft, Bookmark, Sparkles, Star, Rocket, Zap, ChevronRight, Compass, X } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 
-interface BlogPostData {
-    id: string;
-    title: string;
-    slug: string;
-    excerpt: string;
-    content: string;
-    date: string;
-    readTime: string;
-    category: string;
-    image: string;
+function initialPost(slug?: string): BlogPostData | null {
+    const element = document.getElementById('initial-blog-post');
+    if (!element?.textContent) return null;
+    try {
+        const post = JSON.parse(element.textContent);
+        return post.slug === slug ? post : null;
+    } catch { return null; }
 }
 
 const BlogPost = () => {
     const { slug } = useParams();
     const navigate = useNavigate();
-    const [post, setPost] = useState<BlogPostData | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [post, setPost] = useState<BlogPostData | null>(() => initialPost(slug));
+    const [loading, setLoading] = useState(() => !initialPost(slug));
     const [scrollProgress, setScrollProgress] = useState(0);
     const [isBrowseOpen, setIsBrowseOpen] = useState(false);
     const [sections, setSections] = useState([
@@ -28,137 +27,26 @@ const BlogPost = () => {
     ]);
 
     useEffect(() => {
-        const fetchPost = () => {
+        let cancelled = false;
+        const cached = initialPost(slug);
+        setLoading(!cached);
+        const fetchPost = async () => {
             try {
-                // Use Vite's magic to find the post in the folder
-                const postModules = import.meta.glob("/src/content/blogs/*.json", { eager: true });
-
-                const posts = Object.values(postModules).map((module: any) => {
-                    return module.default || module;
-                });
-
-                const foundPost = posts.find((p: any) => p.slug === slug);
-
-                if (foundPost) {
-                    setPost(foundPost);
-
-                    // SEO Magic: Update browser title and meta tags for Google
-                    document.title = `${foundPost.title} | NumGuru Blog`;
-
-                    let metaDesc = document.querySelector('meta[name="description"]');
-                    if (!metaDesc) {
-                        metaDesc = document.createElement('meta');
-                        metaDesc.setAttribute('name', 'description');
-                        document.head.appendChild(metaDesc);
-                    }
-                    metaDesc.setAttribute('content', foundPost.excerpt || "Discover numerology insights on NumGuru.");
-
-                    // Add Canonical Link
-                    let canonicalLink = document.querySelector('link[rel="canonical"]');
-                    if (!canonicalLink) {
-                        canonicalLink = document.createElement('link');
-                        canonicalLink.setAttribute('rel', 'canonical');
-                        document.head.appendChild(canonicalLink);
-                    }
-                    canonicalLink.setAttribute('href', `https://numguru.online/blog/${slug}`);
-
-                    // JSON-LD Structured Data for Google Indexing
-                    // Build image URL — handle relative and absolute paths
-                    const imageUrl = foundPost.image
-                        ? `https://numguru.online${foundPost.image.startsWith('/') ? '' : '/'}${foundPost.image}`
-                        : "https://numguru.online/og-image.png";
-
-                    // Extract keywords from title + category
-                    const keywordList = [
-                        ...(foundPost.category ? [foundPost.category] : []),
-                        "numerology",
-                        "NumGuru",
-                        ...(foundPost.title || "").split(" ").filter((w: string) => w.length > 4).slice(0, 5),
-                    ].join(", ");
-
-                    // Estimate word count from content
-                    const wordCount = foundPost.content
-                        ? foundPost.content.replace(/<[^>]+>/g, "").split(/\s+/).filter(Boolean).length
-                        : 500;
-
-                    // Parse date safely
-                    const parsedDate = foundPost.date ? new Date(foundPost.date) : new Date("2026-01-27");
-                    const isoDate = isNaN(parsedDate.getTime())
-                        ? "2026-01-27"
-                        : parsedDate.toISOString().split('T')[0];
-
-                    const jsonLd = {
-                        "@context": "https://schema.org",
-                        "@type": "Article",
-                        "headline": foundPost.title,
-                        "description": foundPost.excerpt || "",
-                        "image": {
-                            "@type": "ImageObject",
-                            "url": imageUrl,
-                            "width": 1200,
-                            "height": 630
-                        },
-                        "author": {
-                            "@type": "Organization",
-                            "name": "NumGuru",
-                            "url": "https://numguru.online"
-                        },
-                        "publisher": {
-                            "@type": "Organization",
-                            "name": "NumGuru",
-                            "url": "https://numguru.online",
-                            "logo": {
-                                "@type": "ImageObject",
-                                "url": "https://numguru.online/favicon.svg",
-                                "width": 60,
-                                "height": 60
-                            }
-                        },
-                        "datePublished": isoDate,
-                        "dateModified": isoDate,
-                        "inLanguage": "en-IN",
-                        "keywords": keywordList,
-                        "wordCount": wordCount,
-                        "articleSection": foundPost.category || "Numerology",
-                        "url": `https://numguru.online/blog/${slug}`,
-                        "mainEntityOfPage": {
-                            "@type": "WebPage",
-                            "@id": `https://numguru.online/blog/${slug}`
-                        },
-                        "isPartOf": {
-                            "@type": "Blog",
-                            "@id": "https://numguru.online/blog",
-                            "name": "NumGuru Blog",
-                            "publisher": {
-                                "@type": "Organization",
-                                "name": "NumGuru"
-                            }
-                        }
-                    };
-
-                    // Inject or update the JSON-LD script tag
-                    let script = document.querySelector('#blog-post-json-ld') as HTMLScriptElement;
-                    if (!script) {
-                        script = document.createElement('script') as HTMLScriptElement;
-                        script.id = 'blog-post-json-ld';
-                        script.type = 'application/ld+json';
-                        document.head.appendChild(script);
-                    }
-                    script.textContent = JSON.stringify(jsonLd, null, 2);
-                } else {
-                    console.error("Post not found in folder for slug:", slug);
-                    navigate("/blog");
-                }
+                const found = cached || (slug ? await loadBlogPost(slug) : null);
+                if (cancelled) return;
+                if (found) setPost(found);
+                else navigate("/blog", { replace: true });
             } catch (error) {
-                console.error("Error loading post from folder:", error);
-                navigate("/blog");
+                if (!cancelled) {
+                    console.error("Error loading blog article", error);
+                    navigate("/blog", { replace: true });
+                }
             } finally {
-                setLoading(false);
-                window.scrollTo(0, 0);
+                if (!cancelled) { setLoading(false); window.scrollTo(0, 0); }
             }
         };
-
-        fetchPost();
+        void fetchPost();
+        return () => { cancelled = true; };
     }, [slug, navigate]);
 
     useEffect(() => {
@@ -261,15 +149,7 @@ const BlogPost = () => {
                         {/* Left Side: Featured Image */}
                         <div className="w-full lg:w-1/2">
                             <div className="relative aspect-video rounded-3xl md:rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl group">
-                                <img
-                                    src={post.image?.startsWith('http') || post.image?.startsWith('/') ? encodeURI(post.image) : `/${encodeURI(post.image || 'og-image.png')}`}
-                                    alt={post.title}
-                                    className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105"
-                                    onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        target.src = "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200";
-                                    }}
-                                />
+                                <BlogImage src={post.image} alt={post.title} className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105" priority sizes="(min-width: 1024px) 896px, 100vw" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                             </div>
                         </div>
@@ -319,8 +199,7 @@ const BlogPost = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     {(() => {
-                                        const postModules = import.meta.glob("/src/content/blogs/*.json", { eager: true });
-                                        const allPosts = Object.values(postModules).map((m: any) => m.default || m);
+                                        const allPosts = blogPosts;
                                         const related = allPosts
                                             .filter((p: any) => p.slug !== post.slug)
                                             .sort((a, b) => {
@@ -334,12 +213,7 @@ const BlogPost = () => {
                                         return related.map((r: any) => (
                                             <Link key={r.slug} to={`/blog/${r.slug}`} onClick={() => window.scrollTo(0,0)} className="group flex flex-col gap-4">
                                                 <div className="aspect-[16/10] overflow-hidden rounded-2xl border border-white/10 relative">
-                                                    <img 
-                                                        src={r.image.startsWith('http') || r.image.startsWith('/') ? r.image : `/${r.image}`}
-                                                        alt={r.title}
-                                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                                        onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800"; }}
-                                                    />
+                                                    <BlogImage src={r.image} alt={r.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" sizes="(min-width: 1024px) 50vw, 100vw" />
                                                     <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
                                                 </div>
                                                 <div className="flex flex-col gap-2">

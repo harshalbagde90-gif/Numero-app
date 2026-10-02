@@ -61,7 +61,7 @@ export const PrivacyPolicy = () => {
     return (
         <PolicyLayout
             title="Privacy Policy"
-            lastUpdated="January 18, 2026"
+            lastUpdated="October 2, 2026"
             icon={<Shield className="h-4 w-4" />}
         >
             <div className="space-y-8 text-slate-300 leading-relaxed">
@@ -75,7 +75,7 @@ export const PrivacyPolicy = () => {
                         <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
                             <h3 className="text-secondary font-bold uppercase tracking-widest text-xs mb-3">For Free Reports:</h3>
                             <ul className="list-disc pl-5 space-y-2">
-                                <li>Date of Birth only</li>
+                                <li>Date of birth and the time you submit the free sample form</li>
                             </ul>
                         </div>
                         <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
@@ -83,7 +83,8 @@ export const PrivacyPolicy = () => {
                             <ul className="list-disc pl-5 space-y-2">
                                 <li>Full Name</li>
                                 <li>Date of Birth</li>
-                                <li>Payment information (processed securely by our payment gateway partner)</li>
+                                <li>Email address and WhatsApp phone number entered at checkout</li>
+                                <li>Order ID, payment ID, amount, payment status, and any promo code used</li>
                             </ul>
                         </div>
                     </div>
@@ -95,8 +96,9 @@ export const PrivacyPolicy = () => {
                     <ul className="list-disc pl-5 space-y-2">
                         <li>Generate your personalized numerology report based on Pythagorean numerology principles</li>
                         <li>Process your payment through our secure third-party payment gateway (such as Razorpay)</li>
-                        <li>Send your report to your email address</li>
+                        <li>Provide and restore access to your paid report</li>
                         <li>Provide customer support if needed</li>
+                        <li>Keep transaction records and resolve payment issues</li>
                     </ul>
                 </section>
 
@@ -106,16 +108,16 @@ export const PrivacyPolicy = () => {
                         <li>We <strong>DO NOT</strong> sell your personal data to anyone</li>
                         <li>We <strong>DO NOT</strong> share your data with third parties (except our payment processor for transactions)</li>
                         <li>We <strong>DO NOT</strong> send promotional emails unless you subscribe separately</li>
-                        <li>We <strong>DO NOT</strong> use your data for any purpose other than generating your report</li>
+                        <li>We use your data to provide reports, manage payments and access, and respond to support requests</li>
                     </ul>
                 </section>
 
                 <section className="space-y-4">
                     <h2 className="text-white text-2xl font-serif font-bold">Data Storage and Security</h2>
                     <ul className="list-disc pl-5 space-y-2">
-                        <li>We store minimal data required for operational purposes only</li>
+                        <li>We store form submissions, customer details, and transaction records in our restricted database</li>
                         <li>We do not maintain user accounts or login systems</li>
-                        <li>Your payment information is handled entirely by our secure payment gateway partner</li>
+                        <li>Card and bank details are handled by our payment gateway; we store payment identifiers and status, not card or bank details</li>
                         <li>We use industry-standard security measures to protect your information</li>
                     </ul>
                 </section>

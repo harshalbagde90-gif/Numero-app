@@ -1,60 +1,15 @@
 PRIVACY POLICY
 
+Last Updated: October 2, 2026
 
-Last Updated: January 18, 2026
-At NumGuru (https://numguru.online/), we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains what information we collect, how we use it, and your rights.
-What Information We Collect
-For Free Reports:
+NumGuru (https://numguru.online/) collects information needed to create numerology reports, manage purchases, restore paid access, and respond to support requests.
 
-Date of Birth only
+For a free sample, we store the submitted date of birth and submission time. For a premium request, we store the name and date of birth entered in the form. At checkout, we store the name, email address, phone number, date of birth, order ID, payment ID, amount, payment status, and any promo code used.
 
-For Paid Reports (₹399):
+Razorpay processes card and bank details. NumGuru does not store card numbers or bank credentials. Customer, form, and transaction records are stored in a restricted database. We do not sell personal data or send promotional emails without a separate subscription.
 
-Full Name
-Date of Birth
-Payment information (processed securely by our payment gateway partner)
+We use this information to generate reports, verify payments, provide or restore paid report access, maintain transaction records, and resolve support issues. A paid report access link is a bearer link; anyone with that link can view the associated report, so keep it private.
 
-How We Use Your Information
-We use your information only to:
+To ask what data we hold about you or request deletion, contact connectnumguru@gmail.com. We may retain transaction records where required for accounting or dispute resolution.
 
-Generate your personalized numerology report based on Pythagorean numerology principles
-Process your payment through our secure third-party payment gateway (such as Razorpay)
-Send your report to your email address
-Provide customer support if needed
-
-What We DO NOT Do
-
-We do NOT sell your personal data to anyone
-We do NOT share your data with third parties (except our payment processor for transactions)
-We do NOT send promotional emails unless you subscribe separately
-We do NOT use your data for any purpose other than generating your report
-
-Data Storage and Security
-
-We store minimal data required for operational purposes only
-We do not maintain user accounts or login systems
-Your payment information is handled entirely by our secure payment gateway partner
-We use industry-standard security measures to protect your information
-
-Third-Party Services
-We use trusted third-party services:
-
-Payment Gateway (e.g., Razorpay) to process payments securely
-These services have their own privacy policies and security measures
-
-Your Rights
-You have the right to:
-
-Know what data we have collected about you
-Request deletion of your data
-Ask questions about how your data is used
-
-Children's Privacy
-Our services are intended for users aged 18 and above. We do not knowingly collect information from anyone under 18.
-Contact Us
-If you have any questions or concerns about your privacy, please contact us at:
-
-Email: connectnumguru@gmial.com
-
-Changes to This Policy
-We may update this Privacy Policy from time to time. Any changes will be posted on this page with an updated date.
+This policy may be updated on this page with a new date.

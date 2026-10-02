@@ -86,6 +86,7 @@ import { ReviewForm } from "@/components/ReviewForm";
 interface ResultPreviewProps {
   reading: NumerologyReading | null;
   isUnlocked: boolean;
+  reportToken: string | null;
   onUnlock: () => void;
   onReset: () => void;
   isLoading: boolean;
@@ -94,6 +95,7 @@ interface ResultPreviewProps {
 export function ResultPreview({
   reading,
   isUnlocked,
+  reportToken,
   onUnlock,
   onReset,
   isLoading,
@@ -253,16 +255,15 @@ export function ResultPreview({
       }
       
       try {
-        const rawData = `${reading.name}|${reading.dob.getTime()}|${isUnlocked ? 1 : 0}`;
-        const encodedData = btoa(encodeURIComponent(rawData));
-        const slug = reading.name.trim().toLowerCase().replace(/\s+/g, '-');
-        const shareUrl = `${window.location.origin}${window.location.pathname}?v=${encodedData}&report=${slug}`;
+        const reportLink = isUnlocked && reportToken
+          ? `${window.location.origin}${window.location.pathname}?access=${encodeURIComponent(reportToken)}`
+          : shareUrl;
         
         cursorY += 4;
         addText("Your Permanent Virtual Link", 16, true, colorTitle);
         cursorY += 2;
         addText("Access your interactive digital report anytime by visiting the link below:", 11, false, colorText);
-        addText(shareUrl, 11, true, colorSubtitle);
+        addText(reportLink, 11, true, colorSubtitle);
         cursorY += 6;
       } catch (e) {
         // Fallback if URL gen fails
@@ -279,16 +280,17 @@ export function ResultPreview({
   const shareUrl = React.useMemo(() => {
     if (!reading) return "";
     try {
-      // Super-short pipe format: Name|Timestamp|Unlocked
-      // This removes JSON overhead (quotes, brackets, keys)
-      const rawData = `${reading.name}|${reading.dob.getTime()}|${isUnlocked ? 1 : 0}`;
+      if (isUnlocked && reportToken) {
+        return `${window.location.origin}${window.location.pathname}?access=${encodeURIComponent(reportToken)}`;
+      }
+      const rawData = `${reading.name}|${reading.dob.getTime()}|0`;
       const encodedData = btoa(encodeURIComponent(rawData));
       const slug = reading.name.trim().toLowerCase().replace(/\s+/g, '-');
       return `${window.location.origin}${window.location.pathname}?v=${encodedData}&report=${slug}`;
     } catch (e) {
       return window.location.href;
     }
-  }, [reading, isUnlocked]);
+  }, [reading, isUnlocked, reportToken]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -319,7 +321,7 @@ export function ResultPreview({
     subtext,
     colorClass
   }: {
-    icon: any,
+    icon: React.ComponentType<{ className?: string }>,
     label: string,
     number: number,
     subtext: string,
@@ -396,7 +398,7 @@ export function ResultPreview({
     content
   }: {
     id: string,
-    icon: any,
+    icon: React.ComponentType<{ className?: string }>,
     title: string,
     colorClass: string,
     content: { para: string, points: string[] }

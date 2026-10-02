@@ -65,6 +65,7 @@ import { generateFreeReportFromDob, FreeNumerologyReport } from "@/lib/numerolog
 import { ReviewsSection } from "@/components/ReviewsSection";
 import { Footer } from "@/components/Footer";
 import { FAQ } from "@/components/FAQ";
+import { postNumGuru } from "@/lib/numguruApi";
 
 type AppState = "landing" | "preview";
 
@@ -114,26 +115,22 @@ const Index = () => {
       try {
         let name = "";
         let dob = new Date();
-        let unlocked = false;
-
         if (v) {
           const decodedRaw = decodeURIComponent(atob(v));
-          const [n, d, u] = decodedRaw.split("|");
+          const [n, d] = decodedRaw.split("|");
           name = n;
           dob = new Date(parseInt(d));
-          unlocked = u === "1";
         } else if (sharedData) {
           const decoded = JSON.parse(atob(sharedData));
           name = decoded.n;
           dob = new Date(decoded.d);
-          unlocked = decoded.u === true || decoded.u === 1;
         }
 
         if (name && dob) {
           return {
             state: "preview" as AppState,
             reading: generateReading(name, dob),
-            isUnlocked: unlocked,
+            isUnlocked: false,
             isFromUrl: true
           };
         }
@@ -146,13 +143,13 @@ const Index = () => {
     const saved = localStorage.getItem("numerology_session");
     if (saved) {
       try {
-        const { reading: savedReading, isUnlocked: savedIsUnlocked, state: savedAppState } = JSON.parse(saved);
+        const { reading: savedReading, state: savedAppState } = JSON.parse(saved);
         if (savedReading) {
           savedReading.dob = new Date(savedReading.dob);
           return {
             state: (savedAppState as AppState) || "landing",
             reading: savedReading,
-            isUnlocked: savedIsUnlocked || false
+            isUnlocked: false
           };
         }
       } catch (e) {
@@ -168,6 +165,8 @@ const Index = () => {
   const [state, setState] = useState<AppState>(initial.state);
   const [reading, setReading] = useState<NumerologyReading | null>(initial.reading);
   const [isUnlocked, setIsUnlocked] = useState(initial.isUnlocked);
+  const [reportToken, setReportToken] = useState<string | null>(null);
+  const [leadId, setLeadId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [fullName, setFullName] = useState("");
   const [fullDob, setFullDob] = useState<Date | undefined>(undefined);
@@ -239,20 +238,68 @@ const Index = () => {
         });
       }
     }
-  }, []);
+  }, [reading, toast]);
 
 
 
-  // Session Persistence: Save to localStorage (Only if not in landing state)
+  // A saved browser state never grants paid access; the server validates the token on each load.
   useEffect(() => {
     if (reading) {
       localStorage.setItem("numerology_session", JSON.stringify({
         reading,
-        isUnlocked,
         state
       }));
     }
-  }, [isUnlocked, reading, state]);
+  }, [reading, state]);
+
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get('access') ||
+      localStorage.getItem('numguru_report_token');
+    if (!token) return;
+    let active = true;
+    postNumGuru<{ name: string; dob: string }>('/api/report-access', { token })
+      .then((report) => {
+        if (!active) return;
+        setReading(generateReading(report.name, new Date(`${report.dob}T12:00:00`)));
+        setState('preview');
+        setReportToken(token);
+        setIsUnlocked(true);
+        localStorage.setItem('numguru_report_token', token);
+      })
+      .catch(() => {
+        if (!active) return;
+        localStorage.removeItem('numguru_report_token');
+        setReportToken(null);
+        setIsUnlocked(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    const pending = localStorage.getItem('numguru_pending_payment');
+    if (!pending) return;
+    let active = true;
+    try {
+      const payment = JSON.parse(pending) as Record<string, string>;
+      postNumGuru<{ reportToken: string }>('/api/verify-payment', payment)
+        .then(({ reportToken: token }) => postNumGuru<{ name: string; dob: string }>(
+          '/api/report-access', { token },
+        ).then((report) => ({ token, report })))
+        .then(({ token, report }) => {
+          if (!active) return;
+          localStorage.removeItem('numguru_pending_payment');
+          localStorage.setItem('numguru_report_token', token);
+          setReading(generateReading(report.name, new Date(`${report.dob}T12:00:00`)));
+          setReportToken(token);
+          setIsUnlocked(true);
+          setState('preview');
+        })
+        .catch(() => { /* Keep the payment response for another retry or support. */ });
+    } catch {
+      localStorage.removeItem('numguru_pending_payment');
+    }
+    return () => { active = false; };
+  }, []);
 
   // Handle auto-scroll to top when transitioning to preview state
   useEffect(() => {
@@ -270,8 +317,11 @@ const Index = () => {
 
   const handleReset = () => {
     localStorage.removeItem("numerology_session");
+    localStorage.removeItem("numguru_report_token");
     setReading(null);
     setIsUnlocked(false);
+    setReportToken(null);
+    setLeadId(null);
     setState("landing");
     setFullName("");
     setFullDob(undefined);
@@ -286,7 +336,7 @@ const Index = () => {
     setState("preview");
   };
 
-  const handleSampleSubmit = (e: React.FormEvent) => {
+  const handleSampleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sampleDob) {
       toast({
@@ -297,12 +347,20 @@ const Index = () => {
       return;
     }
 
-    const report = generateFreeReportFromDob(sampleDob);
-    setFreeReport(report);
-    setIsSampleResultOpen(true);
+    try {
+      await postNumGuru('/api/leads', { source: 'free_sample', dob: format(sampleDob, 'yyyy-MM-dd') });
+      const report = generateFreeReportFromDob(sampleDob);
+      setFreeReport(report);
+      setIsSampleResultOpen(true);
+    } catch {
+      toast({ title: 'Please try again', description: 'We could not save your form securely.', variant: 'destructive' });
+    }
   };
 
-    const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (token: string, reportName: string) => {
+    if (reading) setReading(generateReading(reportName, reading.dob));
+    localStorage.setItem('numguru_report_token', token);
+    setReportToken(token);
     setIsUnlocked(true);
     setIsLoading(false);
     setState("preview");
@@ -313,7 +371,7 @@ const Index = () => {
     });
   };
 
-  const handleFullSubmit = (e: React.FormEvent) => {
+  const handleFullSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const name = fullName.trim();
@@ -327,9 +385,16 @@ const Index = () => {
       return;
     }
 
-    const newReading = generateReading(name, fullDob);
-    setReading(newReading);
-    setIsCheckoutOpen(true);
+    try {
+      const saved = await postNumGuru<{ leadId: string }>('/api/leads', {
+        source: 'premium_form', name, dob: format(fullDob, 'yyyy-MM-dd'),
+      });
+      setLeadId(saved.leadId);
+      setReading(generateReading(name, fullDob));
+      setIsCheckoutOpen(true);
+    } catch {
+      toast({ title: 'Please try again', description: 'We could not save your form securely.', variant: 'destructive' });
+    }
   };
 
   const handleUnlock = () => {
@@ -846,8 +911,9 @@ const Index = () => {
                   } as React.CSSProperties}
                   onClick={() => {
                     setIsSampleResultOpen(false);
+                    if (sampleDob) setFullDob(sampleDob);
                     setTimeout(() => {
-                      setIsCheckoutOpen(true);
+                      scrollToSection('premium-form-container');
                     }, 300);
                   }}
                   type="button"
@@ -1093,6 +1159,9 @@ const Index = () => {
                       Show My Number
                     </button>
                   </form>
+                  <p className="relative z-10 mt-3 text-[11px] text-muted-foreground">
+                    Your birth date is saved to provide this sample. <Link to="/privacy-policy" className="underline hover:text-white">Privacy Policy</Link>
+                  </p>
                 </div>
 
                 <div className="flex flex-wrap gap-3 justify-center lg:justify-start text-xs font-medium text-muted-foreground">
@@ -1199,6 +1268,10 @@ const Index = () => {
                       <span className="material-icons-round text-sm text-secondary mt-0.5">info</span>
                       <p>Full name is required for accurate Pythagorean calculation of your Soul Urge and Expression numbers.</p>
                     </div>
+
+                    <p className="text-[11px] text-muted-foreground">
+                      Your name and birth date are saved for this report. <Link to="/privacy-policy" className="underline hover:text-white">Privacy Policy</Link>
+                    </p>
 
                     <button
                       className="w-full py-3 px-6 rounded-lg gradient-gold text-secondary-foreground font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 mt-2"
@@ -2064,7 +2137,10 @@ const Index = () => {
         <CheckoutModal 
           isOpen={isCheckoutOpen} 
           setIsOpen={setIsCheckoutOpen} 
-          onSuccess={handlePaymentSuccess} 
+          onSuccess={handlePaymentSuccess}
+          readingName={reading?.name || fullName}
+          readingDob={reading?.dob || fullDob || null}
+          leadId={leadId}
         />
       </div >
     );
@@ -2076,6 +2152,7 @@ const Index = () => {
       <ResultPreview
         reading={reading}
         isUnlocked={isUnlocked}
+        reportToken={reportToken}
         onUnlock={handleUnlock}
         onReset={handleReset}
         isLoading={isLoading}
@@ -2083,7 +2160,10 @@ const Index = () => {
       <CheckoutModal 
         isOpen={isCheckoutOpen} 
         setIsOpen={setIsCheckoutOpen} 
-        onSuccess={handlePaymentSuccess} 
+        onSuccess={handlePaymentSuccess}
+        readingName={reading.name}
+        readingDob={reading.dob}
+        leadId={leadId}
       />
     </>
   );

@@ -1,17 +1,34 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabaseClient';
+import { postNumGuru } from '@/lib/numguruApi';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Tag, Sparkles, CreditCard, Lock, User, Mail, Phone } from 'lucide-react';
+
+type RazorpayResponse = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayWindow = Window & {
+  Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
+};
+
+const errorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
 
 interface CheckoutModalProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  onSuccess: () => void;
+  onSuccess: (reportToken: string, reportName: string) => void;
+  readingName: string;
+  readingDob: Date | null;
+  leadId?: string | null;
 }
 
-export function CheckoutModal({ isOpen, setIsOpen, onSuccess }: CheckoutModalProps) {
+export function CheckoutModal({ isOpen, setIsOpen, onSuccess, readingName, readingDob, leadId }: CheckoutModalProps) {
   const [promoCode, setPromoCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -21,8 +38,12 @@ export function CheckoutModal({ isOpen, setIsOpen, onSuccess }: CheckoutModalPro
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
 
+  useEffect(() => {
+    if (isOpen && readingName) setName(readingName);
+  }, [isOpen, readingName]);
+
   const validateForm = () => {
-    if (!name || !email || !phone) {
+    if (!name || !email || !phone || !readingDob) {
       toast.error('Please enter Name, Email, and WhatsApp Number.');
       return false;
     }
@@ -37,83 +58,24 @@ export function CheckoutModal({ isOpen, setIsOpen, onSuccess }: CheckoutModalPro
     return true;
   };
 
-  const saveUserData = async (isFree: boolean) => {
-    try {
-      await supabase.from('users').upsert({
-        email,
-        name,
-        phone,
-        status: isFree ? 'premium_free' : 'premium_paid',
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'email' });
-    } catch (e) {
-      console.log('Error saving user data:', e);
-    }
-  };
+  const checkoutDetails = () => ({
+    name: name.trim(), email: email.trim(), phone: phone.trim(),
+    dob: format(readingDob!, 'yyyy-MM-dd'), leadId,
+  });
 
   const handleApplyPromo = async () => {
     if (!validateForm()) return;
     if (!promoCode.trim()) return;
-    
     setIsVerifying(true);
     try {
-      const code = promoCode.trim().toUpperCase();
-      
-      // Query the code
-      const { data, error } = await supabase
-        .from('promo_codes')
-        .select('*')
-        .eq('code', code)
-        .single();
-        
-      // Fallback for hardcoded promo codes if Supabase fails or doesn't have it
-      if (error || !data) {
-        if (code === 'NUMGURU100' || code === 'NUMGURU50') {
-          await saveUserData(true);
-          toast.success(`Success! Magic code applied!`);
-          setTimeout(() => {
-            setIsOpen(false);
-            onSuccess();
-          }, 1000);
-          setIsVerifying(false);
-          return;
-        }
-        
-        toast.error('Invalid Promo Code');
-        setIsVerifying(false);
-        return;
-      }
-      
-      if (data.usage_count >= data.max_uses) {
-        toast.error('Sorry, this code has reached its limit of 50 users.');
-        setIsVerifying(false);
-        return;
-      }
-      
-      // Update usage_count
-      const { error: updateError } = await supabase
-        .from('promo_codes')
-        .update({ usage_count: data.usage_count + 1 })
-        .eq('id', data.id);
-        
-      if (updateError) {
-        toast.error('Error applying code. Please try again.');
-        setIsVerifying(false);
-        return;
-      }
-      
-      await saveUserData(true);
-      toast.success(`Success! You are user #${data.usage_count + 1}/${data.max_uses} to claim this!`);
-      
-      // Mock payment delay
-      setTimeout(() => {
-        setIsOpen(false);
-        onSuccess();
-      }, 1000);
-      
-    } catch (err) {
-      console.error(err);
-      toast.error('Something went wrong.');
+      const result = await postNumGuru<{ reportToken: string }>('/api/redeem-promo', {
+        ...checkoutDetails(), code: promoCode.trim().toUpperCase(),
+      });
+      toast.success('Promo code applied!');
+      setIsOpen(false);
+      onSuccess(result.reportToken, name.trim());
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, 'Could not apply promo code.'));
     } finally {
       setIsVerifying(false);
     }
@@ -123,51 +85,52 @@ export function CheckoutModal({ isOpen, setIsOpen, onSuccess }: CheckoutModalPro
     if (!validateForm()) return;
     setIsProcessingPayment(true);
     
-    // Use environment variable for Razorpay Key
-    // Fallback test key if missing so UI doesn't break locally
-    const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_YourTestKeyHere';
-    
-    if (!RAZORPAY_KEY) {
-      toast.error("Payment system configuration missing.");
-      setIsProcessingPayment(false);
-      return;
-    }
-    
-    const options = {
-      key: RAZORPAY_KEY,
-      amount: 9900, // 99 INR in paise
-      currency: "INR",
-      name: "NumGuru",
-      description: "Premium Numerology Report",
-      image: "/favicon.png",
-      handler: async function (response: any) {
-        await saveUserData(false);
-        toast.success("Payment Successful!");
-        setIsOpen(false);
-        onSuccess();
-        setIsProcessingPayment(false);
-      },
-      prefill: {
-        name: name,
-        email: email,
-        contact: phone
-      },
-      theme: {
-        color: "#F59E0B",
-      },
-      modal: {
-        ondismiss: function() {
-          setIsProcessingPayment(false);
-        }
-      }
-    };
-    
     try {
-      const rzp1 = new (window as any).Razorpay(options);
+      const order = await postNumGuru<{ orderId: string; amount: number; currency: string; keyId: string }>(
+        '/api/create-order', checkoutDetails(),
+      );
+      const options = {
+        key: order.keyId,
+        order_id: order.orderId,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'NumGuru',
+        description: 'Premium Numerology Report',
+        image: '/favicon.png',
+        handler: async (response: RazorpayResponse) => {
+          localStorage.setItem('numguru_pending_payment', JSON.stringify(response));
+          try {
+            let verified: { reportToken: string } | undefined;
+            for (let attempt = 0; attempt < 4; attempt++) {
+              try {
+                verified = await postNumGuru<{ reportToken: string }>('/api/verify-payment', { ...response });
+                break;
+              } catch (error) {
+                if (attempt === 3 || !errorMessage(error, '').includes('not captured yet')) throw error;
+                await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)));
+              }
+            }
+            if (!verified) throw new Error('Payment could not be verified.');
+            localStorage.removeItem('numguru_pending_payment');
+            toast.success('Payment verified!');
+            setIsOpen(false);
+            onSuccess(verified.reportToken, name.trim());
+          } catch (error: unknown) {
+            toast.error(`${errorMessage(error, 'Payment verification is pending.')} We will retry when you reopen the site. Payment ID: ${response.razorpay_payment_id}`);
+          } finally {
+            setIsProcessingPayment(false);
+          }
+        },
+        prefill: { name, email, contact: phone },
+        theme: { color: '#F59E0B' },
+        modal: { ondismiss: () => setIsProcessingPayment(false) },
+      };
+      const Razorpay = (window as RazorpayWindow).Razorpay;
+      if (!Razorpay) throw new Error('Payment window could not load. Please refresh and try again.');
+      const rzp1 = new Razorpay(options);
       rzp1.open();
-    } catch (e) {
-      console.error("Razorpay SDK not loaded", e);
-      toast.error("Payment system is currently unavailable.");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, 'Payment system is currently unavailable.'));
       setIsProcessingPayment(false);
     }
   };
@@ -186,7 +149,7 @@ export function CheckoutModal({ isOpen, setIsOpen, onSuccess }: CheckoutModalPro
               <Lock className="h-5 w-5 text-amber-500" />
             </div>
             <DialogTitle className="text-xl font-serif font-black text-white tracking-tight">Unlock Premium</DialogTitle>
-            <p className="text-[13px] text-slate-400">Where should we send your detailed insights?</p>
+            <p className="text-[13px] text-slate-400">Enter your details to access your report after payment.</p>
           </div>
 
           {/* User Details Form */}
@@ -267,7 +230,9 @@ export function CheckoutModal({ isOpen, setIsOpen, onSuccess }: CheckoutModalPro
             )}
           </Button>
           
-          <p className="text-[9px] text-center text-slate-500 uppercase tracking-widest">100% Secure Encrypted Payment</p>
+          <p className="text-[10px] text-center text-slate-400">
+            Details are saved for your order and report. <a href="/privacy-policy" className="underline hover:text-white">Privacy Policy</a>
+          </p>
         </div>
       </DialogContent>
     </Dialog>

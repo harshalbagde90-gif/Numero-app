@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { postNumGuru } from '@/lib/numguruApi';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Tag, Sparkles, CreditCard, Lock, User, Mail, Phone } from 'lucide-react';
@@ -29,6 +30,7 @@ interface CheckoutModalProps {
 }
 
 export function CheckoutModal({ isOpen, setIsOpen, onSuccess, readingName, readingDob, leadId }: CheckoutModalProps) {
+  const { currency, symbol, amount, originalAmount, isLoading, syncCurrency } = useCurrency();
   const [promoCode, setPromoCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -89,6 +91,12 @@ export function CheckoutModal({ isOpen, setIsOpen, onSuccess, readingName, readi
       const order = await postNumGuru<{ orderId: string; amount: number; currency: string; keyId: string }>(
         '/api/create-order', checkoutDetails(),
       );
+      if (order.currency !== currency || order.amount !== Math.round(amount * 100)) {
+        syncCurrency(order.currency === 'USD' ? 'USD' : 'INR');
+        toast.error('Your regional price was updated. Please review it and click Pay again.');
+        setIsProcessingPayment(false);
+        return;
+      }
       const options = {
         key: order.keyId,
         order_id: order.orderId,
@@ -219,13 +227,14 @@ export function CheckoutModal({ isOpen, setIsOpen, onSuccess, readingName, readi
           {/* Razorpay Section */}
           <Button
             onClick={handleRazorpayPayment}
-            disabled={isProcessingPayment}
+            disabled={isProcessingPayment || isLoading}
             className="w-full h-12 bg-white text-black hover:bg-slate-200 rounded-xl font-black tracking-wide shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2"
           >
             <CreditCard className="h-4 w-4" />
             {isProcessingPayment ? "Processing..." : (
               <span className="flex items-center gap-2">
-                Pay ₹99 Securely <span className="line-through text-slate-500 font-medium text-sm">₹999</span>
+                Pay {symbol}{currency === 'USD' ? amount.toFixed(2) : amount} Securely
+                {originalAmount !== null && <span className="line-through text-slate-500 font-medium text-sm">{symbol}{originalAmount}</span>}
               </span>
             )}
           </Button>

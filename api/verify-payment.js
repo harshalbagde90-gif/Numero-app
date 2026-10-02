@@ -1,5 +1,5 @@
 import {
-  CURRENCY, PRICE_PAISE, database, errorResponse, json, logServerError,
+  database, errorResponse, json, logServerError,
   newReportToken, razorpayRequest, readBody, validPaymentSignature,
 } from '../server/numguru.js';
 
@@ -17,14 +17,15 @@ export async function POST(request) {
     const { data: order, error: orderError } = await db.from('numguru_payments')
       .select('id,customer_id,status,amount_paise,currency,razorpay_payment_id')
       .eq('razorpay_order_id', orderId).single();
-    if (orderError || !order || order.amount_paise !== PRICE_PAISE || order.currency !== CURRENCY ||
+    if (orderError || !order || !Number.isInteger(order.amount_paise) || order.amount_paise <= 0 ||
+        !['INR', 'USD'].includes(order.currency) ||
         (order.razorpay_payment_id && order.razorpay_payment_id !== paymentId)) {
       return errorResponse('Payment order not found', 404);
     }
 
     const payment = await razorpayRequest(`/payments/${encodeURIComponent(paymentId)}`);
-    if (payment.order_id !== orderId || payment.amount !== PRICE_PAISE ||
-        payment.currency !== CURRENCY || payment.status !== 'captured') {
+    if (payment.order_id !== orderId || payment.amount !== order.amount_paise ||
+        payment.currency !== order.currency || payment.status !== 'captured') {
       return errorResponse('Payment is not captured yet', 409);
     }
 

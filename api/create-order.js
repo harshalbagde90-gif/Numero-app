@@ -1,12 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import {
-  CURRENCY, PRICE_PAISE, customerFields, database, errorResponse, json,
+  customerFields, database, errorResponse, json, priceForRequest,
   logServerError, razorpayKeyId, razorpayRequest, readBody,
 } from '../server/numguru.js';
 
 export async function POST(request) {
   try {
     const body = await readBody(request);
+    const price = priceForRequest(request);
     const customer = customerFields(body);
     const db = database();
     const { data: savedCustomer, error: customerError } = await db
@@ -15,9 +16,9 @@ export async function POST(request) {
 
     const order = await razorpayRequest('/orders', {
       method: 'POST',
-      body: JSON.stringify({ amount: PRICE_PAISE, currency: CURRENCY, receipt: `ng_${randomUUID().slice(0, 24)}` }),
+      body: JSON.stringify({ amount: price.amount, currency: price.currency, receipt: `ng_${randomUUID().slice(0, 24)}` }),
     });
-    if (!order.id || order.amount !== PRICE_PAISE || order.currency !== CURRENCY) {
+    if (!order.id || order.amount !== price.amount || order.currency !== price.currency) {
       throw new Error('Razorpay returned an unexpected order');
     }
 
@@ -27,12 +28,12 @@ export async function POST(request) {
       customer_id: savedCustomer.id,
       lead_id: leadId,
       razorpay_order_id: order.id,
-      amount_paise: PRICE_PAISE,
-      currency: CURRENCY,
+      amount_paise: price.amount,
+      currency: price.currency,
       status: 'created',
     });
     if (paymentError) throw paymentError;
-    return json({ orderId: order.id, amount: PRICE_PAISE, currency: CURRENCY, keyId: razorpayKeyId() }, 201);
+    return json({ orderId: order.id, amount: price.amount, currency: price.currency, keyId: razorpayKeyId() }, 201);
   } catch (error) {
     logServerError('Order creation failed', error);
     return errorResponse('Payment setup is unavailable. Please try again later.', 503);

@@ -1282,9 +1282,9 @@ const Index = () => {
                     </button>
 
                     <div className="flex items-center justify-between text-xs mt-auto pt-3 border-t border-white/10">
-                      <span className="text-white/40 line-through">{symbol}{originalAmount}</span>
+                      {originalAmount !== null && <span className="text-white/40 line-through">{symbol}{originalAmount}</span>}
                       <div className="flex items-center gap-2">
-                        <span className="bg-secondary/20 text-secondary px-1.5 py-0.5 rounded text-[10px] font-bold">90% OFF</span>
+                        {originalAmount !== null && <span className="bg-secondary/20 text-secondary px-1.5 py-0.5 rounded text-[10px] font-bold">90% OFF</span>}
                         <span className="font-bold text-xl text-white">{symbol}{amount}</span>
                       </div>
                     </div>

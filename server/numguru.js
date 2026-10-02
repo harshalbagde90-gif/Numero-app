@@ -1,8 +1,17 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
-export const PRICE_PAISE = 9900;
-export const CURRENCY = 'INR';
+export const PRICES = Object.freeze({
+  INR: Object.freeze({ currency: 'INR', amount: 9900 }),
+  USD: Object.freeze({ currency: 'USD', amount: 499 }),
+});
+
+export function priceForRequest(request) {
+  // Vercel supplies the visitor's country to serverless functions. If it is
+  // unavailable (for example, local development), keep the Indian price.
+  const country = request.headers.get('x-vercel-ip-country')?.toUpperCase();
+  return country && country !== 'IN' ? PRICES.USD : PRICES.INR;
+}
 
 export function json(data, status = 200) {
   return new Response(JSON.stringify(data), {

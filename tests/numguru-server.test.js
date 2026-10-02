@@ -1,8 +1,67 @@
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import test from 'node:test';
-import { customerFields, dateOfBirth, hashToken, newReportToken, validPaymentSignature } from '../server/numguru.js';
+import { customerFields, dateOfBirth, hashToken, newReportToken, priceForRequest, validPaymentSignature } from '../server/numguru.js';
 import { POST as saveLead } from '../api/leads.js';
+import { POST as createOrder } from '../api/create-order.js';
+import { GET as getPricing } from '../api/pricing.js';
+
+test('regional prices match the server quote and keep currency subunits', async () => {
+  for (const [country, currency, amount] of [['IN', 'INR', 9900], ['US', 'USD', 499], ['GB', 'USD', 499]]) {
+    const request = new Request('https://numguru.online/api/pricing', {
+      headers: { 'x-vercel-ip-country': country },
+    });
+    assert.deepEqual(priceForRequest(request), { currency, amount });
+    assert.deepEqual(await (await getPricing(request)).json(), { currency, amount });
+  }
+  assert.deepEqual(priceForRequest(new Request('http://localhost/api/pricing')), { currency: 'INR', amount: 9900 });
+});
+
+test('checkout creates and records the exact regional Razorpay amount', async () => {
+  const previousFetch = globalThis.fetch;
+  const previousEnv = Object.fromEntries(['SUPABASE_URL', 'SUPABASE_SECRET_KEY', 'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET']
+    .map((key) => [key, process.env[key]]));
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_unit_test';
+  process.env.RAZORPAY_KEY_ID = 'rzp_test_unit_test';
+  process.env.RAZORPAY_KEY_SECRET = 'unit-test-secret';
+  try {
+    for (const [country, currency, amount] of [['IN', 'INR', 9900], ['US', 'USD', 499]]) {
+      const calls = [];
+      globalThis.fetch = async (input, init = {}) => {
+        const url = String(input);
+        const payload = init.body ? JSON.parse(init.body) : undefined;
+        calls.push({ url, payload });
+        if (url.includes('/numguru_customers')) {
+          return new Response(JSON.stringify({ id: '11111111-1111-4111-8111-111111111111' }),
+            { status: 201, headers: { 'content-type': 'application/json' } });
+        }
+        if (url === 'https://api.razorpay.com/v1/orders') {
+          return new Response(JSON.stringify({ id: 'order_test', amount: payload.amount, currency: payload.currency }),
+            { status: 200, headers: { 'content-type': 'application/json' } });
+        }
+        if (url.includes('/numguru_payments')) return new Response(null, { status: 201 });
+        throw new Error(`Unexpected request: ${url}`);
+      };
+      const request = new Request('https://numguru.online/api/create-order', {
+        method: 'POST',
+        headers: { origin: 'https://numguru.online', 'x-vercel-ip-country': country },
+        body: JSON.stringify({ name: 'Jane Doe', email: 'jane@example.com', phone: '+1 212 555 0199', dob: '1990-02-28' }),
+      });
+      const response = await createOrder(request);
+      assert.equal(response.status, 201);
+      assert.deepEqual(await response.json(), { orderId: 'order_test', amount, currency, keyId: 'rzp_test_unit_test' });
+      assert.equal(calls.find(({ url }) => url.includes('api.razorpay.com')).payload.amount, amount);
+      assert.equal(calls.find(({ url }) => url.includes('/numguru_payments')).payload.currency, currency);
+    }
+  } finally {
+    globalThis.fetch = previousFetch;
+    for (const [key, value] of Object.entries(previousEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
 
 test('validates customer details before storing them', () => {
   assert.deepEqual(customerFields({

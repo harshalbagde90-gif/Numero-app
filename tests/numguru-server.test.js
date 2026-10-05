@@ -5,6 +5,7 @@ import { customerFields, dateOfBirth, hashToken, newReportToken, priceForRequest
 import { POST as saveLead } from '../api/leads.js';
 import { POST as createOrder } from '../api/create-order.js';
 import { GET as getPricing } from '../api/pricing.js';
+import { POST as redeemPromo } from '../api/redeem-promo.js';
 
 test('regional prices match the server quote and keep currency subunits', async () => {
   for (const [country, currency, amount] of [['IN', 'INR', 9900], ['US', 'USD', 499], ['GB', 'USD', 499]]) {
@@ -106,4 +107,51 @@ test('a malformed lead cannot reach the database', async () => {
   });
   const response = await saveLead(request);
   assert.equal(response.status, 400);
+});
+
+test('promo checkout returns the exact claim position and explains a full campaign', async () => {
+  const previousFetch = globalThis.fetch;
+  const previousUrl = process.env.SUPABASE_URL;
+  const previousSecret = process.env.SUPABASE_SECRET_KEY;
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_unit_test';
+  const request = () => new Request('https://numguru.online/api/redeem-promo', {
+    method: 'POST',
+    headers: { origin: 'https://numguru.online', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Jane Doe', email: 'jane@example.com', phone: '+1 212 555 0199',
+      dob: '1990-02-28', code: 'numguru100',
+    }),
+  });
+  try {
+    let calls = 0;
+    globalThis.fetch = async (input, init = {}) => {
+      assert.match(String(input), /\/rpc\/claim_numguru_promo_with_position$/);
+      assert.equal(JSON.parse(init.body).p_code, 'NUMGURU100');
+      calls++;
+      return calls === 1
+        ? new Response(JSON.stringify({ position: 50, limit: 50 }), {
+          status: 200, headers: { 'content-type': 'application/json' },
+        })
+        : new Response(JSON.stringify({ message: 'promo_code_exhausted', code: 'P0001' }), {
+          status: 400, headers: { 'content-type': 'application/json' },
+        });
+    };
+    const lastSlot = await redeemPromo(request());
+    assert.equal(lastSlot.status, 200);
+    const data = await lastSlot.json();
+    assert.match(data.reportToken, /^[a-f0-9]{64}$/);
+    assert.deepEqual({ position: data.position, limit: data.limit }, { position: 50, limit: 50 });
+
+    const full = await redeemPromo(request());
+    assert.equal(full.status, 409);
+    assert.match((await full.json()).error, /all 50 places/i);
+    assert.equal(calls, 2);
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousUrl === undefined) delete process.env.SUPABASE_URL;
+    else process.env.SUPABASE_URL = previousUrl;
+    if (previousSecret === undefined) delete process.env.SUPABASE_SECRET_KEY;
+    else process.env.SUPABASE_SECRET_KEY = previousSecret;
+  }
 });

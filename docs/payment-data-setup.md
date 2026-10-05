@@ -13,3 +13,22 @@ A rollback-only SQL test inserted a linked lead, customer, payment, and report-a
 5. If a customer is charged but the report remains locked, search Razorpay for the payment ID and compare it with `numguru_payments`. The browser keeps the signed payment response and retries verification on the next visit. Do not mark a database row paid from a screenshot or client-side status alone.
 
 The `numguru_report_access` table stores only a hash of each bearer token. Treat report URLs as private because anyone with the URL can open that report.
+
+## First 50 promo campaign
+
+Apply `supabase/migrations/20261005_numguru_first_50_promo.sql` before deploying the checkout code that calls `claim_numguru_promo_with_position`. The migration activates `NUMGURU100` for 50 successful claims, disables the unused `NUMGURU50` code, blocks repeat use by the same email, and returns the successful claim's position to the checkout. The database row lock and `NUMGURU100` check constraint enforce the cap even for simultaneous requests. Do not run the old scratch scripts that create `NUMGURU100` with 100 uses.
+
+After deployment, verify without consuming a slot:
+
+```sql
+select code, usage_count, max_uses
+from public.promo_codes
+where upper(code) in ('NUMGURU50', 'NUMGURU100')
+order by code;
+
+select count(*) as recorded_claims
+from public.numguru_payments
+where status = 'promo' and upper(promo_code) = 'NUMGURU100';
+```
+
+`usage_count` should match `recorded_claims`; the limit must remain 50. Testing a real redemption consumes one of the 50 places, so use a separate test environment for a full 50th/51st end-to-end test.

@@ -34,6 +34,7 @@ export function CheckoutModal({ isOpen, setIsOpen, onSuccess, readingName, readi
   const [promoCode, setPromoCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [promoResult, setPromoResult] = useState<{ reportToken: string; position: number | null; limit: number | null } | null>(null);
 
   // User Data State
   const [name, setName] = useState('');
@@ -70,17 +71,24 @@ export function CheckoutModal({ isOpen, setIsOpen, onSuccess, readingName, readi
     if (!promoCode.trim()) return;
     setIsVerifying(true);
     try {
-      const result = await postNumGuru<{ reportToken: string }>('/api/redeem-promo', {
+      const result = await postNumGuru<{ reportToken: string; position: number | null; limit: number | null }>('/api/redeem-promo', {
         ...checkoutDetails(), code: promoCode.trim().toUpperCase(),
       });
-      toast.success('Promo code applied!');
-      setIsOpen(false);
-      onSuccess(result.reportToken, name.trim());
+      localStorage.setItem('numguru_report_token', result.reportToken);
+      setPromoResult(result);
     } catch (error: unknown) {
       toast.error(errorMessage(error, 'Could not apply promo code.'));
     } finally {
       setIsVerifying(false);
     }
+  };
+
+  const finishPromo = () => {
+    if (!promoResult) return;
+    const { reportToken } = promoResult;
+    setPromoResult(null);
+    setIsOpen(false);
+    onSuccess(reportToken, name.trim());
   };
 
   const handleRazorpayPayment = async () => {
@@ -144,14 +152,31 @@ export function CheckoutModal({ isOpen, setIsOpen, onSuccess, readingName, readi
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open && promoResult) finishPromo();
+      else setIsOpen(open);
+    }}>
       <DialogContent className="max-w-[400px] w-[95vw] p-0 overflow-hidden border border-amber-500/20 bg-[#0a0518] shadow-[0_0_50px_rgba(234,179,8,0.15)] rounded-[2rem]">
         <div className="absolute inset-0 z-0 pointer-events-none">
           <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-amber-500/10 blur-[80px] rounded-full" />
           <div className="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full" />
         </div>
         
-        <div className="p-8 relative z-10 space-y-6">
+        {promoResult ? (
+          <div className="p-8 relative z-10 space-y-5 text-center">
+            <Sparkles className="mx-auto h-10 w-10 text-amber-400" />
+            <DialogTitle className="text-2xl font-serif font-black text-white">Your place is confirmed</DialogTitle>
+            <p className="text-sm text-slate-300">
+              {promoResult.position && promoResult.limit
+                ? <>You are user <strong className="text-amber-400">#{promoResult.position} of {promoResult.limit}</strong> to claim this offer.</>
+                : 'Your promo code was applied successfully.'}
+            </p>
+            <p className="text-xs text-slate-400">Your premium report is ready.</p>
+            <Button onClick={finishPromo} className="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold">
+              View my report
+            </Button>
+          </div>
+        ) : <div className="p-8 relative z-10 space-y-6">
           <div className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-2">
               <Lock className="h-5 w-5 text-amber-500" />
@@ -209,7 +234,7 @@ export function CheckoutModal({ isOpen, setIsOpen, onSuccess, readingName, readi
             <div className="flex gap-2">
               <input 
                 type="text"
-                placeholder="e.g. NUMGURU100"
+                placeholder="Enter your promo code"
                 value={promoCode}
                 onChange={(e) => setPromoCode(e.target.value)}
                 className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-[13px] text-white placeholder:text-white/20 focus:outline-none focus:border-amber-500/50 uppercase font-mono tracking-wider transition-colors"
@@ -222,6 +247,7 @@ export function CheckoutModal({ isOpen, setIsOpen, onSuccess, readingName, readi
                 {isVerifying ? <Sparkles className="h-4 w-4 animate-spin" /> : 'Apply'}
               </Button>
             </div>
+            <p className="text-[11px] text-slate-400">Limited offer: first 50 successful claims only.</p>
           </div>
 
           {/* Razorpay Section */}
@@ -242,7 +268,7 @@ export function CheckoutModal({ isOpen, setIsOpen, onSuccess, readingName, readi
           <p className="text-[10px] text-center text-slate-400">
             Details are saved for your order and report. <a href="/privacy-policy" className="underline hover:text-white">Privacy Policy</a>
           </p>
-        </div>
+        </div>}
       </DialogContent>
     </Dialog>
   );
